@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.1 | 2026-09-04 | 채팅방 보안 격리·Firebase Auth 익명인증·userRooms 인덱스 추가 -->
+<!-- v2.2 | 2026-09-04 | 개인설정(알림·밝기·야간모드)·멤버 직책 관리 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -163,6 +163,67 @@
       transition: background .15s; line-height: 1;
     }
     .btn-edit-name:hover { background: rgba(255,255,255,.2); color: #fff; }
+    .btn-settings {
+      background: none; border: none; color: rgba(255,255,255,.75);
+      font-size: 17px; cursor: pointer; padding: 4px 7px; border-radius: 6px;
+      transition: background .15s; line-height: 1;
+    }
+    .btn-settings:hover { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* ============================================================ SETTINGS PANEL */
+    #settings-panel {
+      position: fixed; top: 54px; right: 12px; z-index: 300;
+      width: 280px; background: var(--surface); border-radius: var(--r);
+      box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+      padding: 18px 20px;
+      transform: translateY(-8px); opacity: 0; pointer-events: none;
+      transition: transform .18s, opacity .18s;
+    }
+    #settings-panel.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+    .sp-title { font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 14px; }
+    .sp-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .sp-row:last-child { margin-bottom: 0; }
+    .sp-label { font-size: 14px; font-weight: 500; color: var(--text); }
+    .sp-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    /* 토글 스위치 */
+    .toggle-wrap { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: var(--border); border-radius: 24px;
+      cursor: pointer; transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%;
+      left: 3px; top: 3px; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s;
+    }
+    .toggle-wrap input:checked + .toggle-slider { background: var(--primary); }
+    .toggle-wrap input:checked + .toggle-slider::before { transform: translateX(18px); }
+    /* 밝기 슬라이더 */
+    .sp-slider-wrap { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .sp-slider-row { display: flex; align-items: center; gap: 10px; }
+    .sp-slider {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; border-radius: 2px; background: var(--border); outline: none; cursor: pointer;
+    }
+    .sp-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+      background: var(--primary); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    }
+    .sp-slider::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%; border: none;
+      background: var(--primary); cursor: pointer;
+    }
+    .sp-val { font-size: 12px; color: var(--text-muted); min-width: 32px; text-align: right; }
+    .sp-divider { border: none; border-top: 1px solid var(--border-lt); margin: 14px 0; }
+
+    /* 관리자 패널 직책 목록 */
+    .role-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border-lt); }
+    .role-name { font-size:13px; font-weight:600; color:var(--text); min-width:60px; }
+    .role-input { flex:1; padding:5px 8px; border:1px solid var(--border); border-radius:var(--rx); font-size:12px; font-family:inherit; color:var(--text); background:var(--sidebar); outline:none; }
+    .role-input:focus { border-color:var(--primary); }
+    .role-save-btn { font-size:11px; padding:5px 10px; background:var(--primary); color:#fff; border:none; border-radius:var(--rx); cursor:pointer; white-space:nowrap; }
+    .role-save-btn:hover { background:var(--primary-dk); }
 
     /* ============================================================ TABS */
     #main-tabs { flex: 1; overflow: hidden; position: relative; }
@@ -556,6 +617,50 @@
   </div>
 </div>
 
+<!-- ====== 개인 설정 패널 ====== -->
+<div id="settings-panel">
+  <div class="sp-title">개인 설정</div>
+
+  <!-- 알림 -->
+  <div class="sp-row">
+    <div>
+      <div class="sp-label">🔔 알림</div>
+      <div class="sp-sub">새 메시지 알림</div>
+    </div>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="sp-notif" checked>
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <hr class="sp-divider">
+
+  <!-- 야간 모드 -->
+  <div class="sp-row">
+    <div>
+      <div class="sp-label">🌙 야간 모드</div>
+      <div class="sp-sub">어두운 화면으로 변경</div>
+    </div>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="sp-dark">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <hr class="sp-divider">
+
+  <!-- 밝기 -->
+  <div class="sp-slider-wrap">
+    <div class="sp-label">☀️ 화면 밝기</div>
+    <div class="sp-slider-row">
+      <span style="font-size:12px">🌑</span>
+      <input type="range" class="sp-slider" id="sp-brightness" min="50" max="150" value="100">
+      <span style="font-size:12px">🌕</span>
+      <span class="sp-val" id="sp-brightness-val">100%</span>
+    </div>
+  </div>
+</div>
+
 <!-- ====== 관리자 비밀번호 모달 ====== -->
 <div class="overlay" id="admin-pwd-modal" hidden>
   <div class="modal">
@@ -581,7 +686,7 @@
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px">로그인 가능한 사용자 목록을 관리합니다.</p>
       <div style="background:var(--sidebar);border-radius:var(--rs);padding:12px;margin-bottom:16px;max-height:180px;overflow-y:auto" id="admin-user-list"></div>
-      <div class="field" style="margin-bottom:0">
+      <div class="field" style="margin-bottom:20px">
         <label>새 사용자 추가</label>
         <div style="display:flex;gap:8px">
           <input type="text" id="admin-new-user-input" placeholder="이름 입력" style="flex:1">
@@ -589,6 +694,11 @@
         </div>
         <p id="admin-add-err" class="login-err" hidden style="margin-top:8px;margin-bottom:0"></p>
       </div>
+
+      <!-- 직책 관리 -->
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">멤버 직책 관리</p>
+      <div style="background:var(--sidebar);border-radius:var(--rs);padding:12px;max-height:200px;overflow-y:auto" id="admin-role-list"></div>
+      <p id="admin-role-msg" style="font-size:12px;color:var(--accent);margin-top:8px;display:none">저장되었습니다!</p>
     </div>
     <div class="modal-foot">
       <button class="btn-primary" id="admin-panel-close-btn" style="width:auto;padding:10px 22px">닫기</button>
@@ -653,6 +763,7 @@
       <div class="h-avatar" id="h-av"></div>
       <span class="h-uname" id="h-uname"></span>
       <button class="btn-edit-name" id="edit-name-btn" title="표시 이름 변경">✏️</button>
+      <button class="btn-settings" id="settings-btn" title="개인 설정">🔧</button>
       <button class="btn-admin" id="admin-btn" hidden title="관리자 설정">⚙️</button>
       <button class="btn-logout" id="logout-btn">로그아웃</button>
     </div>
@@ -850,6 +961,8 @@ let user         = null;
 let db           = null;
 let storage      = null;
 let auth         = null;
+let userRoles    = {};   // { 이름: '직책' }
+let settings     = { notif: true, brightness: 100, darkMode: false };
 let curRoomId    = null;
 let curRoom      = null;
 let allRooms     = {};
@@ -957,7 +1070,7 @@ function makeMemberCard(name, isMe) {
     <div class="member-av" style="background:${ucolor(name)}">${esc(dispN[0])}</div>
     <div class="member-info">
       <div class="member-nm">${esc(dispN)}${name !== dispN ? ` <span style="font-size:12px;color:var(--text-muted)">(${esc(name)})</span>` : ''}</div>
-      <div class="member-sub">힐마루케어 직원</div>
+      <div class="member-sub">${esc(getUserRole(name))}</div>
     </div>
     ${isMe ? '<span class="member-me-badge">나</span>' : ''}
   `;
@@ -971,6 +1084,7 @@ function requestNotifPermission() {
   if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
 }
 function showNotif(senderName, text, roomName, roomId) {
+  if (!settings.notif) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const body = text.length > 80 ? text.substring(0,80) + '…' : text;
   const n = new Notification(`${senderName} · ${roomName}`, { body, icon: 'logo.png' });
@@ -1050,6 +1164,100 @@ function saveDisplayName(newName) {
 
 // ──────────────────────────────────────────────────────
 // FIREBASE INIT
+// ──────────────────────────────────────────────────────
+// SETTINGS (개인 설정 — localStorage)
+// ──────────────────────────────────────────────────────
+function loadSettings() {
+  try { Object.assign(settings, JSON.parse(localStorage.getItem('hmc_settings') || '{}')); } catch(e) {}
+}
+function saveSettings() {
+  try { localStorage.setItem('hmc_settings', JSON.stringify(settings)); } catch(e) {}
+}
+function applySettings() {
+  // 야간모드
+  document.documentElement.dataset.theme = settings.darkMode ? 'dark' : 'light';
+  // 밝기
+  document.documentElement.style.filter = settings.brightness !== 100 ? `brightness(${settings.brightness}%)` : '';
+  // UI 동기화
+  const notifEl = document.getElementById('sp-notif');
+  const darkEl  = document.getElementById('sp-dark');
+  const brEl    = document.getElementById('sp-brightness');
+  const brValEl = document.getElementById('sp-brightness-val');
+  if (notifEl) notifEl.checked = settings.notif;
+  if (darkEl)  darkEl.checked  = settings.darkMode;
+  if (brEl)    { brEl.value = settings.brightness; }
+  if (brValEl) brValEl.textContent = settings.brightness + '%';
+}
+function initSettingsPanel() {
+  loadSettings();
+  applySettings();
+
+  const btn   = document.getElementById('settings-btn');
+  const panel = document.getElementById('settings-panel');
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    panel.classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (!panel.contains(e.target) && e.target !== btn) panel.classList.remove('open');
+  });
+
+  // 알림 토글
+  document.getElementById('sp-notif').addEventListener('change', e => {
+    settings.notif = e.target.checked;
+    saveSettings();
+  });
+  // 야간모드 토글
+  document.getElementById('sp-dark').addEventListener('change', e => {
+    settings.darkMode = e.target.checked;
+    applySettings();
+    saveSettings();
+  });
+  // 밝기 슬라이더
+  document.getElementById('sp-brightness').addEventListener('input', e => {
+    settings.brightness = Number(e.target.value);
+    document.getElementById('sp-brightness-val').textContent = settings.brightness + '%';
+    document.documentElement.style.filter = settings.brightness !== 100 ? `brightness(${settings.brightness}%)` : '';
+  });
+  document.getElementById('sp-brightness').addEventListener('change', () => saveSettings());
+}
+
+// ──────────────────────────────────────────────────────
+// ROLES (직책 — Firebase config/roles)
+// ──────────────────────────────────────────────────────
+async function loadRoles() {
+  try {
+    const snap = await get(dbRef(db, 'config/roles'));
+    if (snap.exists()) userRoles = snap.val() || {};
+  } catch(e) {}
+}
+async function saveRole(name, role) {
+  userRoles[name] = role;
+  try { await update(dbRef(db, 'config/roles'), { [name]: role }); } catch(e) {}
+}
+function getUserRole(name) {
+  return userRoles[name] || '힐마루케어 직원';
+}
+function renderRoleList() {
+  const el = document.getElementById('admin-role-list');
+  if (!el) return;
+  el.innerHTML = USERS.map(u => `
+    <div class="role-row">
+      <span class="role-name">${esc(u)}</span>
+      <input class="role-input" id="role-input-${esc(u)}" type="text" placeholder="직책 입력" value="${esc(userRoles[u] || '')}">
+      <button class="role-save-btn" onclick="(async()=>{
+        const v=document.getElementById('role-input-${esc(u)}').value.trim();
+        await saveRole('${esc(u)}',v);
+        const msg=document.getElementById('admin-role-msg');
+        msg.style.display='block';
+        setTimeout(()=>msg.style.display='none',2000);
+        renderMemberList();
+      })()">저장</button>
+    </div>
+  `).join('');
+}
+
 // ──────────────────────────────────────────────────────
 // 1단계: 페이지 로드 시 Firebase 연결 + 사용자 목록 로딩
 function initFirebaseEarly() {
@@ -1732,6 +1940,7 @@ document.getElementById('admin-pwd-confirm-btn').addEventListener('click', () =>
   if (pwd !== ADMIN_PWD) { document.getElementById('admin-pwd-err').hidden = false; return; }
   document.getElementById('admin-pwd-modal').hidden = true;
   renderAdminUserList();
+  renderRoleList();
   document.getElementById('admin-panel-modal').hidden = false;
 });
 document.getElementById('admin-pwd-input').addEventListener('keydown', e => {
@@ -1775,7 +1984,10 @@ async function startApp() {
   loadProfiles();
   applyProfileUpdate();
   requestNotifPermission();
+  initSettingsPanel();
   await signInToFirebase(); // Firebase 익명 인증 완료 후에 채팅 시작
+  await loadRoles();
+  renderMemberList();
   initFirebase();
 }
 
