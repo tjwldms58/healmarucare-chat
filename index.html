@@ -807,11 +807,11 @@
      SCRIPT
 ======================================================== -->
 <script type="module">
-import { initializeApp }    from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getDatabase, ref as dbRef, onValue, off, push, set, update, query,
-         orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+         orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
-       from "https://www.gstatic.com/firebasejs/12.18.0/firebase-storage.js";
+       from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 
 // ──────────────────────────────────────────────────────
 // FIREBASE CONFIG
@@ -978,20 +978,21 @@ function showNotif(senderName, text, roomName, roomId) {
 // ──────────────────────────────────────────────────────
 async function loadUsersFromFirebase() {
   try {
-    const { ref, get } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js');
+    const { ref, get, set: s } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
     const snap = await get(ref(db, 'config/users'));
     if (snap.exists()) {
       const saved = snap.val();
       if (Array.isArray(saved) && saved.length > 0) USERS = saved;
     } else {
-      const { ref: r, set: s } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js');
-      s(r(db, 'config/users'), USERS);
+      s(ref(db, 'config/users'), USERS);
     }
   } catch(e) {}
+  // USERS 로딩 완료 후 세션 복원 재확인
+  if (!user && checkSession()) startApp();
 }
 async function saveUsersToFirebase() {
   try {
-    const { ref, set: s } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js');
+    const { ref, set: s } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
     await s(ref(db, 'config/users'), USERS);
   } catch(e) {}
 }
@@ -1037,17 +1038,26 @@ function saveDisplayName(newName) {
 // ──────────────────────────────────────────────────────
 // FIREBASE INIT
 // ──────────────────────────────────────────────────────
-function initFirebase() {
+// 1단계: 페이지 로드 시 Firebase 연결 + 사용자 목록 로딩
+function initFirebaseEarly() {
   try {
     const app = initializeApp(firebaseConfig);
     db      = getDatabase(app);
     storage = getStorage(app);
+    loadUsersFromFirebase(); // 로그인 전에 USERS 로딩
+  } catch(e) {
+    console.error('Firebase early init error:', e);
+  }
+}
+
+// 2단계: 로그인 후 채팅/리뷰/파일/커뮤니티 감시 시작
+function initFirebase() {
+  try {
     onValue(dbRef(db, '.info/connected'), snap => {
       const el = document.getElementById('db-status');
       if (snap.val()) { el.textContent = '● 실시간 연결됨'; el.className = 'h-db ok'; }
       else             { el.textContent = '연결 중...';     el.className = 'h-db'; }
     });
-    loadUsersFromFirebase();
     listenRooms();
     listenReviews();
     listenFiles();
@@ -1700,7 +1710,9 @@ function startApp() {
   initFirebase();
 }
 
-if (checkSession()) startApp();
+// 페이지 로드 즉시 Firebase 초기화 + USERS 로딩
+// (loadUsersFromFirebase 완료 후 세션 복원은 해당 함수 내부에서 처리)
+initFirebaseEarly();
 </script>
 </body>
 </html>
