@@ -1759,7 +1759,7 @@ document.getElementById('admin-add-user-btn').addEventListener('click', async ()
 // 전역 라이트박스 (img onclick에서 호출)
 window.openLightboxGlobal = openLightbox;
 
-function startApp() {
+async function startApp() {
   document.getElementById('login-screen').hidden = true;
   document.getElementById('app').hidden = false;
   document.getElementById('h-av').textContent    = user.name[0];
@@ -1775,7 +1775,7 @@ function startApp() {
   loadProfiles();
   applyProfileUpdate();
   requestNotifPermission();
-  signInToFirebase(); // Firebase 익명 인증 (Security Rules용 uid 등록)
+  await signInToFirebase(); // Firebase 익명 인증 완료 후에 채팅 시작
   initFirebase();
 }
 
