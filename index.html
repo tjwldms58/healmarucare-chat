@@ -107,7 +107,7 @@
     ============================================================ */
     #login-screen {
       position: fixed; inset: 0; z-index: 1000;
-      background: linear-gradient(135deg, #0F4C6B 0%, #1A6B8F 45%, #2AAD8F 100%);
+      background: #1A6B8F;
       display: flex; align-items: center; justify-content: center;
     }
     .login-card {
@@ -118,11 +118,12 @@
     .login-brand { text-align: center; margin-bottom: 36px; }
     .login-logo {
       width: 64px; height: 64px;
-      background: linear-gradient(135deg,#1A6B8F,#2AAD8F);
+      background: #ffffff;
       border-radius: 18px; margin: 0 auto 14px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 28px; box-shadow: 0 4px 16px rgba(26,107,143,.3);
+      overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,.12);
     }
+    .login-logo img { width: 100%; height: 100%; object-fit: contain; }
     .login-brand h1 { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
     .login-brand p  { font-size: 13px; color: var(--text-muted); }
     .field { margin-bottom: 18px; }
@@ -146,7 +147,7 @@
     }
     .btn-primary {
       width: 100%; padding: 13px; border: none; border-radius: var(--rs);
-      background: linear-gradient(135deg,#1A6B8F,#2AAD8F);
+      background: #1A6B8F;
       color: #fff; font-size: 15px; font-weight: 600; font-family: inherit;
       cursor: pointer; letter-spacing: .3px; transition: opacity .15s;
     }
@@ -165,16 +166,18 @@
 
     header {
       height: 54px; padding: 0 20px;
-      background: linear-gradient(135deg,#0F4C6B,#1A6B8F);
+      background: #1A6B8F;
       display: flex; align-items: center; justify-content: space-between;
       flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.18); z-index: 10;
     }
     .h-brand { display: flex; align-items: center; gap: 10px; }
     .h-logo {
       width: 32px; height: 32px; border-radius: 9px;
-      background: rgba(255,255,255,.15);
-      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      background: #ffffff;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
     }
+    .h-logo img { width: 100%; height: 100%; object-fit: contain; }
     .h-name  { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
     .h-sub   { font-size: 11px; color: rgba(255,255,255,.6); margin-left: 6px; }
     .h-right { display: flex; align-items: center; gap: 10px; }
@@ -373,7 +376,7 @@
     .input-hint { font-size: 11px; color: var(--text-muted); }
     #send-btn {
       height: 44px; padding: 0 18px; flex-shrink: 0;
-      background: linear-gradient(135deg,#1A6B8F,#2AAD8F);
+      background: #1A6B8F;
       color: #fff; border: none; border-radius: var(--rs);
       font-size: 14px; font-weight: 600; font-family: inherit;
       cursor: pointer; white-space: nowrap; transition: opacity .15s;
@@ -437,23 +440,15 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-brand">
-      <div class="login-logo">💙</div>
+      <div class="login-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJcAAACzCAYAAACEoo5ZAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAVgSURBVHhe7d2/iiRlFIbxuSmvw8RL2EvQCzAwNTEzM9BIQTBaE5M1EhGTBUEQETQQ0UQFk5EzUDCcrpp96p3vm67S5weHgd2d6vrzTPdMT+/XN7fSJDf9D6RRjEvTGJemMS5NY1yaxrg0jXFpGuPSNMalaYxL0xiXpjGuwHc//Hr7yecv7z5qm3EFKqybNz66+6htxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF3O4uJYLd60h9sRVr5zot/GUc81XbhhXG8K4mMPFtbxWamveef/L29ff/OziJNJ59vbzu2307S5D7Inrt9//vLiN+8dS+9P3kU597nsffnWx3ftTt38th4uLqghfe/bxxQnfmroQo070nriIax7LTKeNqzx/8f3Fid+akQ8Po+MqL77+8WKft2bkscx06rjqq7ef+LWph9GRZsT119//XOz32tQ93FmcOq7ST/7avPXuF/3THmVGXKXv99qMPpaZjCswKy7yg8roY5nJuAKz4qr97PveZ/SxzGRcAeNijCtgXIxxBYyLMa6AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa5AreZX2zWuhxlXYIngg0+/7X/1KMZ1MP3kr83oC7IsMVnLR45kXAfTT/7ajLwgfXnJkWuTGtfB9JO/NiMvSF99uVZkHsW4Dqaf/LUZdUGWnxL71L3ZCMZ1MP3kr82IC9IfDu9PfQ/2zcuf+6fsZlwH00/+2jzmgtQqy8tTD6+aPerf58yroPpJ39t9l6QCqTWeq+nGva8+UBNLZpbn5esFW9cK/oJcP7bQ588Ni5n9zxpXNfUD3xt9j6U+LA4hnG9gt/Q54wL8qmI/YxrB59E3ce4dvLXP5xx7dQfHv3F9TbjCviSG8a4AksEvljwYcYV8GXOjHEF/A8ajHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa6AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4wrMiquWGe/73mf0scxkXIFZcfX9XpvRxzLTqeOq9Uj7yV+bukcYaUZctX593++1qSUzz+LUcS0XmUzyjhZbZsTVF/J9aEYey0ynjatO8J63TqnFcUddlNFxJcfy0y9/9M0czuHiqhNdF21taoHb+p6DfOO7NXVhahu1rb59GsueuOqhu9/G6GPp274/I5cy3+twcS0X7lpD7Imrvlj6bTzljLq3ThhXG8K4mMPFdQZ74vo/M66AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa6AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa5AvW90vQPrNd8/+gyMS9MYl6YxLk1jXJrGuDSNcWka49I0xqVpjEvT/AsbdKF6BcdIogAAAABJRU5ErkJggg==" alt="힐마루케어"></div>
       <h1>힐마루케어</h1>
       <p>사내 소통 플랫폼 · 대화의 장</p>
     </div>
     <div id="login-err" class="login-err" hidden></div>
     <form id="login-form">
       <div class="field">
-        <label>이름 선택</label>
-        <select id="uname-sel">
-          <option value="">이름을 선택하세요</option>
-          <option>민경필</option>
-          <option>차규은</option>
-          <option>이청용</option>
-          <option>서지은</option>
-          <option>허수빈</option>
-          <option>강수희</option>
-        </select>
+        <label>이름 입력</label>
+        <input type="text" id="uname-input" placeholder="본인 이름을 입력하세요" autocomplete="name">
       </div>
       <div class="field">
         <label>비밀번호</label>
@@ -470,7 +465,7 @@
 <div id="app" hidden>
   <header>
     <div class="h-brand">
-      <div class="h-logo">💙</div>
+      <div class="h-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJcAAACzCAYAAACEoo5ZAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAVgSURBVHhe7d2/iiRlFIbxuSmvw8RL2EvQCzAwNTEzM9BIQTBaE5M1EhGTBUEQETQQ0UQFk5EzUDCcrpp96p3vm67S5weHgd2d6vrzTPdMT+/XN7fSJDf9D6RRjEvTGJemMS5NY1yaxrg0jXFpGuPSNMalaYxL0xiXpjGuwHc//Hr7yecv7z5qm3EFKqybNz66+6htxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF3O4uJYLd60h9sRVr5zot/GUc81XbhhXG8K4mMPFtbxWamveef/L29ff/OziJNJ59vbzu2307S5D7Inrt9//vLiN+8dS+9P3kU597nsffnWx3ftTt38th4uLqghfe/bxxQnfmroQo070nriIax7LTKeNqzx/8f3Fid+akQ8Po+MqL77+8WKft2bkscx06rjqq7ef+LWph9GRZsT119//XOz32tQ93FmcOq7ST/7avPXuF/3THmVGXKXv99qMPpaZjCswKy7yg8roY5nJuAKz4qr97PveZ/SxzGRcAeNijCtgXIxxBYyLMa6AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa5AreZX2zWuhxlXYIngg0+/7X/1KMZ1MP3kr83oC7IsMVnLR45kXAfTT/7ajLwgfXnJkWuTGtfB9JO/NiMvSF99uVZkHsW4Dqaf/LUZdUGWnxL71L3ZCMZ1MP3kr82IC9IfDu9PfQ/2zcuf+6fsZlwH00/+2jzmgtQqy8tTD6+aPerf58yroPpJ39t9l6QCqTWeq+nGva8+UBNLZpbn5esFW9cK/oJcP7bQ588Ni5n9zxpXNfUD3xt9j6U+LA4hnG9gt/Q54wL8qmI/YxrB59E3ce4dvLXP5xx7dQfHv3F9TbjCviSG8a4AksEvljwYcYV8GXOjHEF/A8ajHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa6AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4wrMiquWGe/73mf0scxkXIFZcfX9XpvRxzLTqeOq9Uj7yV+bukcYaUZctX593++1qSUzz+LUcS0XmUzyjhZbZsTVF/J9aEYey0ynjatO8J63TqnFcUddlNFxJcfy0y9/9M0czuHiqhNdF21taoHb+p6DfOO7NXVhahu1rb59GsueuOqhu9/G6GPp274/I5cy3+twcS0X7lpD7Imrvlj6bTzljLq3ThhXG8K4mMPFdQZ74vo/M66AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa6AcTHGFTAuxrgCxsUYV8C4GOMKGBdjXAHjYowrYFyMcQWMizGugHExxhUwLsa4AsbFGFfAuBjjChgXY1wB42KMK2BcjHEFjIsxroBxMcYVMC7GuALGxRhXwLgY4woYF2NcAeNijCtgXIxxBYyLMa5AvW90vQPrNd8/+gyMS9MYl6YxLk1jXJrGuDSNcWka49I0xqVpjEvT/AsbdKF6BcdIogAAAABJRU5ErkJggg==" alt="힐마루케어"></div>
       <span class="h-name">힐마루케어</span>
       <span class="h-sub">대화의 장</span>
     </div>
@@ -990,12 +985,18 @@ async function confirmCreate() {
 // ──────────────────────────────────────────────────────
 document.getElementById('login-form').addEventListener('submit', e => {
   e.preventDefault();
-  const name = document.getElementById('uname-sel').value;
+  const name = document.getElementById('uname-input').value.trim();
   const pw   = document.getElementById('pw-input').value;
   const err  = document.getElementById('login-err');
   err.hidden = true;
 
-  if (!name) { err.textContent='이름을 선택해주세요.'; err.hidden=false; return; }
+  if (!name) { err.textContent='이름을 입력해주세요.'; err.hidden=false; return; }
+  if (!USERS.includes(name)) {
+    err.textContent='등록되지 않은 이름입니다. (민경필, 차규은, 이청용, 서지은, 허수빈, 강수희)';
+    err.hidden=false;
+    document.getElementById('uname-input').focus();
+    return;
+  }
   if (!pw)   { err.textContent='비밀번호를 입력해주세요.'; err.hidden=false; return; }
 
   const btn = document.getElementById('login-btn');
