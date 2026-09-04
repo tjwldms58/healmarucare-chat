@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.0 | 2026-09-04 | 하단 탭·파일첨부·커뮤니티·멤버목록 추가 -->
+<!-- v2.1 | 2026-09-04 | 채팅방 보안 격리·Firebase Auth 익명인증·userRooms 인덱스 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -808,10 +808,13 @@
 ======================================================== -->
 <script type="module">
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getDatabase, ref as dbRef, onValue, off, push, set, update, query,
-         orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+import { getDatabase, ref as dbRef, onValue, off, push, set, update, get, query,
+         orderByChild, limitToLast, onChildAdded, onChildRemoved }
+       from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
+import { getAuth, signInAnonymously }
+       from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 // ──────────────────────────────────────────────────────
 // FIREBASE CONFIG
@@ -846,6 +849,7 @@ const ucolor = n => COLORS[n] || '#7F8C8D';
 let user         = null;
 let db           = null;
 let storage      = null;
+let auth         = null;
 let curRoomId    = null;
 let curRoom      = null;
 let allRooms     = {};
@@ -978,13 +982,12 @@ function showNotif(senderName, text, roomName, roomId) {
 // ──────────────────────────────────────────────────────
 async function loadUsersFromFirebase() {
   try {
-    const { ref, get, set: s } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
-    const snap = await get(ref(db, 'config/users'));
+    const snap = await get(dbRef(db, 'config/users'));
     if (snap.exists()) {
       const saved = snap.val();
       if (Array.isArray(saved) && saved.length > 0) USERS = saved;
     } else {
-      s(ref(db, 'config/users'), USERS);
+      set(dbRef(db, 'config/users'), USERS);
     }
   } catch(e) {}
   // USERS 로딩 완료 후 세션 복원 재확인
@@ -992,8 +995,7 @@ async function loadUsersFromFirebase() {
 }
 async function saveUsersToFirebase() {
   try {
-    const { ref, set: s } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
-    await s(ref(db, 'config/users'), USERS);
+    await set(dbRef(db, 'config/users'), USERS);
   } catch(e) {}
 }
 function login(name, pw) {
@@ -1001,6 +1003,17 @@ function login(name, pw) {
   user = { name };
   try { localStorage.setItem('hmc_u', name); } catch(e) {}
   return true;
+}
+// Firebase 익명 인증 → uid : userName 매핑 저장 (Security Rules용)
+async function signInToFirebase() {
+  if (!auth) return;
+  try {
+    const cred = await signInAnonymously(auth);
+    const uid  = cred.user.uid;
+    await set(dbRef(db, `userSessions/${uid}`), user.name);
+  } catch(e) {
+    console.warn('Firebase anonymous sign-in failed:', e);
+  }
 }
 function logout() { try { localStorage.removeItem('hmc_u'); } catch(e) {} location.reload(); }
 function checkSession() {
@@ -1044,6 +1057,7 @@ function initFirebaseEarly() {
     const app = initializeApp(firebaseConfig);
     db      = getDatabase(app);
     storage = getStorage(app);
+    auth    = getAuth(app);
     loadUsersFromFirebase(); // 로그인 전에 USERS 로딩
   } catch(e) {
     console.error('Firebase early init error:', e);
@@ -1073,28 +1087,78 @@ function initFirebase() {
 // ──────────────────────────────────────────────────────
 function listenRooms() {
   if (listeners.rooms) listeners.rooms();
-  let firstLoad = true;
-  listeners.rooms = onValue(dbRef(db, 'rooms'), snap => {
-    const newRooms = snap.val() || {};
-    if (firstLoad) {
-      firstLoad = false;
-      Object.entries(newRooms).forEach(([rid, room]) => {
-        if (room.members?.[user.name]) lastSeenTs[rid] = room.lastMsgAt || 0;
-      });
-    } else {
-      Object.entries(newRooms).forEach(([rid, room]) => {
-        if (rid === curRoomId) return;
-        if (!room.members?.[user.name]) return;
-        if (!room.lastMsgAt) return;
-        const prev = lastSeenTs[rid] || 0;
-        if (room.lastMsgAt > prev && room.lastMsgUser !== user.name)
-          showNotif(room.lastMsgUser, room.lastMsgText || '', room.name, rid);
-        lastSeenTs[rid] = room.lastMsgAt;
-      });
+
+  const roomListeners = {}; // roomId → unsubscribe fn
+
+  // 기존 방 마이그레이션: userRooms 인덱스가 없는 방을 채워줌
+  migrateUserRooms();
+
+  const userRoomsRef = dbRef(db, `userRooms/${user.name}`);
+
+  // 내가 속한 새 방이 생길 때마다 해당 방만 구독
+  const unsubAdd = onChildAdded(userRoomsRef, snap => {
+    const rid = snap.key;
+    if (roomListeners[rid]) return; // 이미 구독 중
+    const roomRef = dbRef(db, `rooms/${rid}`);
+    roomListeners[rid] = onValue(roomRef, roomSnap => {
+      if (!roomSnap.exists()) {
+        delete allRooms[rid];
+        if (curRoomId === rid) { curRoomId = null; curRoom = null; }
+        renderRooms();
+        return;
+      }
+      const prev    = allRooms[rid];
+      const newRoom = roomSnap.val();
+      // 새 메시지 알림
+      if (prev && newRoom.lastMsgAt && newRoom.lastMsgAt > (prev.lastMsgAt || 0)) {
+        if (rid !== curRoomId && newRoom.lastMsgUser !== user.name) {
+          showNotif(newRoom.lastMsgUser, newRoom.lastMsgText || '', newRoom.name, rid);
+        }
+        lastSeenTs[rid] = newRoom.lastMsgAt;
+      } else if (!prev) {
+        lastSeenTs[rid] = newRoom.lastMsgAt || 0;
+      }
+      allRooms[rid] = newRoom;
+      renderRooms();
+    });
+  });
+
+  // 방에서 제거되면 구독 해제
+  const unsubRemove = onChildRemoved(userRoomsRef, snap => {
+    const rid = snap.key;
+    if (roomListeners[rid]) { roomListeners[rid](); delete roomListeners[rid]; }
+    delete allRooms[rid];
+    if (curRoomId === rid) {
+      curRoomId = null; curRoom = null;
+      document.getElementById('chat-hdr').hidden   = true;
+      document.getElementById('input-area').hidden = true;
+      document.getElementById('msgs').innerHTML    = '';
     }
-    allRooms = newRooms;
     renderRooms();
   });
+
+  listeners.rooms = () => {
+    unsubAdd();
+    unsubRemove();
+    Object.values(roomListeners).forEach(u => u());
+  };
+}
+
+// 최초 1회: 기존 rooms에서 내가 멤버인 방을 userRooms 인덱스에 등록
+async function migrateUserRooms() {
+  try {
+    const myIdxSnap = await get(dbRef(db, `userRooms/${user.name}`));
+    const snap = await get(dbRef(db, 'rooms'));
+    if (!snap.exists()) return;
+    const updates = {};
+    snap.forEach(child => {
+      const room = child.val();
+      if (room.members?.[user.name] && !myIdxSnap.child(child.key).exists()) {
+        updates[`userRooms/${user.name}/${child.key}`] = true;
+      }
+    });
+    if (Object.keys(updates).length) await update(dbRef(db), updates);
+  } catch(e) { /* 규칙 적용 후엔 전체 rooms 읽기 실패할 수 있음 — 무시 */ }
 }
 
 function renderRooms() {
@@ -1137,8 +1201,13 @@ function selectRoom(id) {
 async function createRoom(name, members) {
   const allMem = [user.name, ...members].reduce((acc, n) => { acc[n] = true; return acc; }, {});
   const newRef = push(dbRef(db, 'rooms'));
-  await set(newRef, { name, members: allMem, createdAt: Date.now(), createdBy: user.name });
-  return newRef.key;
+  const rid    = newRef.key;
+  // rooms + userRooms 인덱스 동시 쓰기
+  const updates = {};
+  updates[`rooms/${rid}`] = { name, members: allMem, createdAt: Date.now(), createdBy: user.name };
+  Object.keys(allMem).forEach(m => { updates[`userRooms/${m}/${rid}`] = true; });
+  await update(dbRef(db), updates);
+  return rid;
 }
 
 // ──────────────────────────────────────────────────────
@@ -1706,6 +1775,7 @@ function startApp() {
   loadProfiles();
   applyProfileUpdate();
   requestNotifPermission();
+  signInToFirebase(); // Firebase 익명 인증 (Security Rules용 uid 등록)
   initFirebase();
 }
 
