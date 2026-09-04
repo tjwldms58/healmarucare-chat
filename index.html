@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대화의 장 · 힐마루케어</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- ★ Firebase SDK는 아래 <script type="module"> 에서 import됩니다 -->
+
+  <style>
+    /* ============================================================
+       TOKEN SYSTEM — light + dark
+    ============================================================ */
+    :root {
+      --primary:        #1A6B8F;
+      --primary-dk:     #124E6B;
+      --primary-lt:     #E6F4FA;
+      --primary-mid:    #2A8BB0;
+      --accent:         #2AAD8F;
+      --bg:             #EFF3F7;
+      --surface:        #FFFFFF;
+      --sidebar:        #F3F7FA;
+      --border:         #DDE4EC;
+      --border-lt:      #EEF2F7;
+      --text:           #1B2635;
+      --text-sec:       #4D6070;
+      --text-muted:     #8FA0B0;
+      --review-dot:     #F5A623;
+      --done-dot:       #2AAD8F;
+      --bubble-me-bg:   #C9E8FF;
+      --bubble-me-fg:   #0F3D5A;
+      --bubble-bg:      #FFFFFF;
+      --chat-bg:        #EEF2F7;
+      --shadow-sm:      0 1px 4px rgba(0,0,0,.07);
+      --shadow:         0 2px 12px rgba(0,0,0,.09);
+      --shadow-lg:      0 8px 32px rgba(0,0,0,.13);
+      --r:  12px;
+      --rs:  8px;
+      --rx:  6px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --primary:       #2A8BB0;
+        --primary-dk:    #1A6B8F;
+        --primary-lt:    #0E2535;
+        --primary-mid:   #3AA0C8;
+        --accent:        #2AAD8F;
+        --bg:            #0C1821;
+        --surface:       #12202C;
+        --sidebar:       #0E1B27;
+        --border:        #1E3044;
+        --border-lt:     #182838;
+        --text:          #D8E8F4;
+        --text-sec:      #7FA0B8;
+        --text-muted:    #4A6478;
+        --bubble-me-bg:  #1A3E58;
+        --bubble-me-fg:  #C9E8FF;
+        --bubble-bg:     #162332;
+        --chat-bg:       #0C1821;
+        --shadow-sm:     0 1px 4px rgba(0,0,0,.35);
+        --shadow:        0 2px 12px rgba(0,0,0,.45);
+        --shadow-lg:     0 8px 32px rgba(0,0,0,.55);
+      }
+    }
+    :root[data-theme="dark"] {
+      --primary:       #2A8BB0;
+      --primary-dk:    #1A6B8F;
+      --primary-lt:    #0E2535;
+      --primary-mid:   #3AA0C8;
+      --accent:        #2AAD8F;
+      --bg:            #0C1821;
+      --surface:       #12202C;
+      --sidebar:       #0E1B27;
+      --border:        #1E3044;
+      --border-lt:     #182838;
+      --text:          #D8E8F4;
+      --text-sec:      #7FA0B8;
+      --text-muted:    #4A6478;
+      --bubble-me-bg:  #1A3E58;
+      --bubble-me-fg:  #C9E8FF;
+      --bubble-bg:     #162332;
+      --chat-bg:       #0C1821;
+      --shadow-sm:     0 1px 4px rgba(0,0,0,.35);
+      --shadow:        0 2px 12px rgba(0,0,0,.45);
+      --shadow-lg:     0 8px 32px rgba(0,0,0,.55);
+    }
+
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5;
+      background: var(--bg); color: var(--text);
+      overflow: hidden;
+    }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ============================================================
+       LOGIN
+    ============================================================ */
+    #login-screen {
+      position: fixed; inset: 0; z-index: 1000;
+      background: linear-gradient(135deg, #0F4C6B 0%, #1A6B8F 45%, #2AAD8F 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      background: var(--surface); border-radius: 20px;
+      padding: 44px 40px; width: 400px;
+      box-shadow: var(--shadow-lg);
+    }
+    .login-brand { text-align: center; margin-bottom: 36px; }
+    .login-logo {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg,#1A6B8F,#2AAD8F);
+      border-radius: 18px; margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; box-shadow: 0 4px 16px rgba(26,107,143,.3);
+    }
+    .login-brand h1 { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+    .login-brand p  { font-size: 13px; color: var(--text-muted); }
+    .field { margin-bottom: 18px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-sec); margin-bottom: 7px; letter-spacing: .3px; }
+    .field select,
+    .field input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: var(--rs);
+      font-size: 14px; font-family: inherit; color: var(--text);
+      background: var(--sidebar); outline: none; appearance: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234D6070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      padding-right: 36px; cursor: pointer;
+    }
+    .field select:focus, .field input:focus {
+      border-color: var(--primary); background: var(--surface);
+      box-shadow: 0 0 0 3px rgba(26,107,143,.12);
+    }
+    .btn-primary {
+      width: 100%; padding: 13px; border: none; border-radius: var(--rs);
+      background: linear-gradient(135deg,#1A6B8F,#2AAD8F);
+      color: #fff; font-size: 15px; font-weight: 600; font-family: inherit;
+      cursor: pointer; letter-spacing: .3px; transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .9; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .login-err {
+      background: #FFF0F0; border: 1px solid #FFCDD2;
+      color: #C62828; padding: 10px 14px; border-radius: var(--rx);
+      font-size: 13px; margin-bottom: 16px;
+    }
+
+    /* ============================================================
+       APP SHELL
+    ============================================================ */
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    header {
+      height: 54px; padding: 0 20px;
+      background: linear-gradient(135deg,#0F4C6B,#1A6B8F);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.18); z-index: 10;
+    }
+    .h-brand { display: flex; align-items: center; gap: 10px; }
+    .h-logo {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: rgba(255,255,255,.15);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .h-name  { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+    .h-sub   { font-size: 11px; color: rgba(255,255,255,.6); margin-left: 6px; }
+    .h-right { display: flex; align-items: center; gap: 10px; }
+    .h-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .h-uname {
+      font-size: 13px; font-weight: 500; color: #fff;
+      background: rgba(255,255,255,.15); padding: 5px 12px; border-radius: 20px;
+    }
+    .h-db {
+      font-size: 11px; color: rgba(255,255,255,.6);
+      background: rgba(255,255,255,.1); padding: 4px 10px; border-radius: 10px;
+    }
+    .h-db.ok { color: #7EEBB8; }
+    .btn-logout {
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
+      color: #fff; padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-family: inherit; cursor: pointer; transition: background .15s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.25); }
+
+    #main { flex: 1; display: flex; overflow: hidden; }
+
+    /* ============================================================
+       LEFT — REVIEW PANEL
+    ============================================================ */
+    #left {
+      width: 280px; flex-shrink: 0; background: var(--surface);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+    }
+    .panel-ttl {
+      padding: 14px 18px 12px; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); letter-spacing: .8px; text-transform: uppercase;
+      border-bottom: 1px solid var(--border-lt); background: var(--sidebar);
+    }
+    .rev-sec  { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    .rev-done { display: flex; flex-direction: column; max-height: 44%; min-height: 0; border-top: 2px solid var(--border); }
+    .sec-hdr  {
+      padding: 11px 16px 9px; display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border-lt); flex-shrink: 0;
+    }
+    .sec-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .sec-dot.pend { background: var(--review-dot); }
+    .sec-dot.done { background: var(--done-dot); }
+    .sec-lbl  { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+    .badge {
+      background: var(--review-dot); color: #fff;
+      font-size: 11px; font-weight: 700; min-width: 20px; height: 20px;
+      padding: 0 6px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .badge.done  { background: var(--done-dot); }
+    .badge.empty { background: var(--border); color: var(--text-muted); }
+
+    .rev-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+    .no-rev   { padding: 18px 16px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.7; }
+
+    .rev-item {
+      display: flex; gap: 10px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border-lt); align-items: flex-start;
+    }
+    .rev-item:hover { background: rgba(0,0,0,.02); }
+    .rev-cb-wrap { flex-shrink: 0; padding-top: 2px; }
+    .rev-cb {
+      width: 17px; height: 17px; border: 2px solid var(--border);
+      border-radius: 4px; cursor: pointer; appearance: none; position: relative; transition: all .15s;
+    }
+    .rev-cb:checked { background: var(--done-dot); border-color: var(--done-dot); }
+    .rev-cb::after {
+      content: ''; display: none; width: 5px; height: 8px;
+      border: 2px solid #fff; border-top: none; border-left: none;
+      transform: rotate(45deg); position: absolute; top: 1px; left: 4px;
+    }
+    .rev-cb:checked::after { display: block; }
+    .rev-body { flex: 1; min-width: 0; }
+    .rev-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+    .rev-text { font-size: 13px; color: var(--text); line-height: 1.45; word-break: break-word; margin-bottom: 4px; }
+    .rev-time { font-size: 11px; color: var(--text-muted); }
+    .rev-item.done .rev-text,
+    .rev-item.done .rev-meta { text-decoration: line-through; color: var(--text-muted); }
+
+    /* ============================================================
+       RIGHT — CHAT
+    ============================================================ */
+    #right { flex: 1; display: flex; overflow: hidden; min-width: 0; }
+
+    /* Room list */
+    #rooms-panel {
+      width: 215px; flex-shrink: 0; background: var(--sidebar);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+    }
+    .rooms-hdr {
+      padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-lt); flex-shrink: 0;
+    }
+    .rooms-ttl { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: .8px; text-transform: uppercase; }
+    .btn-add-room {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: var(--primary-lt); border: none; color: var(--primary);
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .btn-add-room:hover { background: var(--primary); color: #fff; }
+    .rooms-scroll { flex: 1; overflow-y: auto; padding: 6px 0; }
+    .room-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; cursor: pointer; border-radius: var(--rx);
+      margin: 1px 6px; color: var(--text-sec); transition: background .1s;
+    }
+    .room-item:hover { background: rgba(26,107,143,.06); }
+    .room-item.active { background: var(--primary-lt); color: var(--primary); }
+    .room-hash { font-size: 16px; color: var(--text-muted); width: 18px; text-align: center; font-weight: 300; flex-shrink: 0; }
+    .room-item.active .room-hash { color: var(--primary); }
+    .room-info { flex: 1; min-width: 0; }
+    .room-nm   { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .room-cnt  { font-size: 11px; color: var(--text-muted); }
+    .room-item.active .room-cnt { color: var(--primary-mid); }
+
+    /* Chat area */
+    #chat { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--chat-bg); min-width: 0; }
+    #chat-hdr {
+      background: var(--surface); padding: 0 20px; height: 54px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); flex-shrink: 0;
+    }
+    .chat-room-name  { font-size: 15px; font-weight: 600; color: var(--text); }
+    .member-chips    { display: flex; gap: 4px; flex-wrap: wrap; }
+    .m-chip {
+      font-size: 11px; color: var(--text-sec); background: var(--bg);
+      border-radius: 10px; padding: 2px 8px;
+    }
+
+    #msgs {
+      flex: 1; overflow-y: auto; padding: 20px 16px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .chat-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--text-muted); text-align: center; gap: 10px; padding: 40px;
+    }
+
+    /* date divider */
+    .date-div {
+      display: flex; align-items: center; gap: 10px; margin: 12px 0;
+    }
+    .date-div::before, .date-div::after { content:''; flex:1; height:1px; background: var(--border); }
+    .date-div span {
+      font-size: 11px; color: var(--text-muted); white-space: nowrap;
+      background: var(--chat-bg); padding: 2px 10px; border-radius: 10px; border: 1px solid var(--border);
+    }
+
+    /* message bubbles */
+    .msg-group { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 2px; }
+    .msg-group.me { flex-direction: row-reverse; }
+    .av-wrap { flex-shrink: 0; width: 32px; margin-bottom: 16px; }
+    .av {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .msg-col { display: flex; flex-direction: column; max-width: 62%; min-width: 0; }
+    .msg-group.me .msg-col { align-items: flex-end; }
+    .msg-sender { font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 3px; padding: 0 4px; }
+    .msg-row { display: flex; align-items: flex-end; gap: 6px; }
+    .msg-group.me .msg-row { flex-direction: row-reverse; }
+    .bubble {
+      padding: 9px 13px; border-radius: 14px;
+      word-break: break-word; line-height: 1.5; font-size: 14px;
+    }
+    .bubble.them { background: var(--bubble-bg); color: var(--text); border-radius: 4px 14px 14px 14px; box-shadow: var(--shadow-sm); }
+    .bubble.me   { background: var(--bubble-me-bg); color: var(--bubble-me-fg); border-radius: 14px 4px 14px 14px; }
+    .bubble.tagged { border-left: 3px solid var(--review-dot); background: #FFF8E8; color: #5A3A00; }
+    .bubble.me.tagged { background: #FFF0CC; color: #5A3A00; }
+    .msg-ts { font-size: 10px; color: var(--text-muted); flex-shrink: 0; margin-bottom: 2px; }
+    .tag-hl { color: var(--primary); font-weight: 700; background: rgba(26,107,143,.12); padding: 1px 4px; border-radius: 3px; }
+
+    /* input */
+    #input-area {
+      background: var(--surface); padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+    }
+    .input-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    #msg-input {
+      width: 100%; border: 1.5px solid var(--border); border-radius: var(--rs);
+      padding: 10px 14px; font-size: 14px; font-family: inherit; color: var(--text);
+      resize: none; min-height: 44px; max-height: 120px; background: var(--sidebar);
+      outline: none; line-height: 1.5; transition: border-color .15s;
+    }
+    #msg-input:focus { border-color: var(--primary); background: var(--surface); }
+    #msg-input::placeholder { color: var(--text-muted); }
+    .input-hint { font-size: 11px; color: var(--text-muted); }
+    #send-btn {
+      height: 44px; padding: 0 18px; flex-shrink: 0;
+      background: linear-gradient(135deg,#1A6B8F,#2AAD8F);
+      color: #fff; border: none; border-radius: var(--rs);
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; white-space: nowrap; transition: opacity .15s;
+    }
+    #send-btn:hover   { opacity: .9; }
+    #send-btn:disabled{ opacity: .5; cursor: not-allowed; }
+
+    /* ============================================================
+       MODAL
+    ============================================================ */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(15,28,45,.55);
+      backdrop-filter: blur(2px); display: flex;
+      align-items: center; justify-content: center; z-index: 500;
+    }
+    .modal {
+      background: var(--surface); border-radius: 16px; width: 440px;
+      max-width: 95vw; box-shadow: var(--shadow-lg); overflow: hidden;
+    }
+    .modal-hdr { padding: 20px 24px 16px; font-size: 16px; font-weight: 700; border-bottom: 1px solid var(--border-lt); }
+    .modal-body { padding: 20px 24px; }
+    .modal-foot { padding: 16px 24px; border-top: 1px solid var(--border-lt); display: flex; justify-content: flex-end; gap: 10px; }
+    .modal .field { margin-bottom: 20px; }
+    .modal .field:last-child { margin-bottom: 0; }
+    .modal .field input { background: var(--surface); }
+    .member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mb-lbl {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--rs);
+      cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .mb-lbl:hover { border-color: var(--primary); background: var(--primary-lt); }
+    .mb-lbl input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+    .mb-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .mb-nm { font-size: 13px; font-weight: 500; color: var(--text); }
+    .btn-sec {
+      padding: 10px 18px; border: 1.5px solid var(--border); border-radius: var(--rs);
+      background: var(--surface); color: var(--text-sec); font-size: 14px;
+      font-family: inherit; cursor: pointer; font-weight: 500; transition: background .15s;
+    }
+    .btn-sec:hover { background: var(--bg); }
+    .modal .btn-primary { width: auto; padding: 10px 22px; }
+
+    /* misc */
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid var(--border); border-top-color: var(--primary);
+      border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .center-msg { text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px; }
+
+    /* ============================================================
+       FIREBASE CONFIG BANNER (shown when placeholder detected)
+    ============================================================ */
+    #config-banner {
+      position: fixed; inset: 0; z-index: 2000; background: rgba(15,28,45,.85);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .config-card {
+      background: var(--surface); border-radius: 16px; padding: 36px 40px;
+      max-width: 540px; width: 100%; box-shadow: var(--shadow-lg);
+    }
+    .config-card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+    .config-card p  { color: var(--text-sec); font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
+    .config-card code {
+      display: block; background: var(--sidebar); border: 1px solid var(--border);
+      border-radius: var(--rx); padding: 12px 16px; font-size: 12px;
+      color: var(--text); margin-bottom: 16px; line-height: 1.8; white-space: pre-wrap;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    .config-card ol { color: var(--text-sec); font-size: 13px; line-height: 2; padding-left: 20px; }
+  </style>
+</head>
+<body>
+
+<!-- ========================================================
+     ★ Firebase 설정 배너 (config 교체 전 자동 표시)
+======================================================== -->
+<div id="config-banner" hidden>
+  <div class="config-card">
+    <h2>🔧 Firebase 설정 필요</h2>
+    <p>아래 <strong>firebaseConfig</strong> 값을 본인의 Firebase 프로젝트 정보로 교체해주세요.</p>
+    <code>const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",          ← 이 값들을
+  authDomain: "...",               ← Firebase 콘솔에서
+  databaseURL: "...",              ← 복사해서
+  projectId: "...",                ← 붙여넣기
+  ...
+};</code>
+    <ol>
+      <li><a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a> 접속</li>
+      <li>프로젝트 선택 → 프로젝트 설정 → 내 앱 → 웹 앱 구성</li>
+      <li>index.html 파일 상단 firebaseConfig 교체 후 저장</li>
+      <li>GitHub에 push → Pages 배포</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ========================================================
+     LOGIN
+======================================================== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo">💙</div>
+      <h1>힐마루케어</h1>
+      <p>사내 소통 플랫폼 · 대화의 장</p>
+    </div>
+    <div id="login-err" class="login-err" hidden></div>
+    <form id="login-form">
+      <div class="field">
+        <label>이름 선택</label>
+        <select id="uname-sel">
+          <option value="">이름을 선택하세요</option>
+          <option>민경필</option>
+          <option>차규은</option>
+          <option>이청용</option>
+          <option>서지은</option>
+          <option>허수빈</option>
+          <option>강수희</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input type="password" id="pw-input" placeholder="비밀번호를 입력하세요" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary" id="login-btn">로그인</button>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================================
+     MAIN APP
+======================================================== -->
+<div id="app" hidden>
+  <header>
+    <div class="h-brand">
+      <div class="h-logo">💙</div>
+      <span class="h-name">힐마루케어</span>
+      <span class="h-sub">대화의 장</span>
+    </div>
+    <div class="h-right">
+      <span class="h-db" id="db-status">연결 중...</span>
+      <div class="h-avatar" id="h-av" style="background:#1A6B8F">?</div>
+      <span class="h-uname" id="h-uname">-</span>
+      <button class="btn-logout" id="logout-btn">로그아웃</button>
+    </div>
+  </header>
+
+  <div id="main">
+    <!-- LEFT: REVIEW PANEL -->
+    <div id="left">
+      <div class="panel-ttl">검토 현황</div>
+
+      <div class="rev-sec">
+        <div class="sec-hdr">
+          <span class="sec-dot pend"></span>
+          <span class="sec-lbl">부대표님 검토</span>
+          <span class="badge empty" id="pend-badge">0</span>
+        </div>
+        <div class="rev-list" id="pend-list">
+          <div class="no-rev">@부대표님 태그된<br>메시지가 여기 모입니다</div>
+        </div>
+      </div>
+
+      <div class="rev-done">
+        <div class="sec-hdr">
+          <span class="sec-dot done"></span>
+          <span class="sec-lbl">검토완료</span>
+          <span class="badge done empty" id="done-badge">0</span>
+        </div>
+        <div class="rev-list" id="done-list">
+          <div class="no-rev" style="font-size:11px">완료 항목이 표시됩니다</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: CHAT -->
+    <div id="right">
+      <!-- Room list -->
+      <div id="rooms-panel">
+        <div class="rooms-hdr">
+          <span class="rooms-ttl">채팅방</span>
+          <button class="btn-add-room" id="add-room-btn" title="새 채팅방 만들기">+</button>
+        </div>
+        <div class="rooms-scroll" id="rooms-scroll">
+          <div class="center-msg"><span class="spinner"></span>불러오는 중...</div>
+        </div>
+      </div>
+
+      <!-- Chat area -->
+      <div id="chat">
+        <div id="chat-hdr" hidden>
+          <span class="chat-room-name" id="chat-room-name"></span>
+          <div class="member-chips" id="member-chips"></div>
+        </div>
+
+        <div id="msgs">
+          <div class="chat-empty">
+            <div style="font-size:40px;margin-bottom:8px">💬</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-sec)">채팅방을 선택하세요</div>
+            <div style="font-size:12px">왼쪽 목록에서 채팅방을 고르거나<br>새 채팅방을 만들어보세요</div>
+          </div>
+        </div>
+
+        <div id="input-area" hidden>
+          <div class="input-col">
+            <textarea id="msg-input" rows="1"
+              placeholder="메시지를 입력하세요... (@부대표님 입력 시 검토함에 자동 추가)"></textarea>
+            <div class="input-hint">Enter 전송 &nbsp;·&nbsp; Shift+Enter 줄바꿈</div>
+          </div>
+          <button id="send-btn">전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     CREATE ROOM MODAL
+======================================================== -->
+<div class="overlay" id="modal" hidden>
+  <div class="modal">
+    <div class="modal-hdr">새 채팅방 만들기</div>
+    <div class="modal-body">
+      <div class="field">
+        <label>채팅방 이름</label>
+        <input type="text" id="room-name-input" placeholder="예: 마케팅팀, 전체공지, 기획회의">
+      </div>
+      <div class="field">
+        <label>멤버 초대 <span style="color:var(--text-muted);font-weight:400">(나는 자동 포함)</span></label>
+        <div class="member-grid" id="member-grid"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" id="cancel-btn">취소</button>
+      <button class="btn-primary" id="confirm-btn">채팅방 만들기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     SCRIPT
+======================================================== -->
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getDatabase, ref as dbRef, onValue, off, push, set, update, query,
+         orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+// ──────────────────────────────────────────────────────
+// FIREBASE CONFIG
+// ──────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyBGq-6sV-2IHr3Kt2o-ReSeAxal1O0wvBY",
+  authDomain:        "healmarucare-chat.firebaseapp.com",
+  databaseURL:       "https://healmarucare-chat-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "healmarucare-chat",
+  storageBucket:     "healmarucare-chat.firebasestorage.app",
+  messagingSenderId: "127187252576",
+  appId:             "1:127187252576:web:3aebd4a7bc5cf7a0e25a05"
+};
+
+// ──────────────────────────────────────────────────────
+// CONSTANTS
+// ──────────────────────────────────────────────────────
+const USERS     = ['민경필','차규은','이청용','서지은','허수빈','강수희'];
+const PASSWORD  = 'healmarucare!';
+const COLORS    = {
+  '민경필':'#E74C3C','차규은':'#9B59B6','이청용':'#27AE60',
+  '서지은':'#E67E22','허수빈':'#2980B9','강수희':'#1ABC9C'
+};
+const ucolor = n => COLORS[n] || '#7F8C8D';
+
+// ──────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────
+let user       = null;   // { name }
+let db         = null;   // getDatabase(app)
+let curRoomId  = null;
+let curRoom    = null;   // room data object
+let allRooms   = {};     // { roomId: roomData }
+let listeners  = {};     // active unsubscribe functions
+
+// ──────────────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────────────
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function tagHL(text) {
+  return esc(text).replace(/@부대표님/g, '<span class="tag-hl">@부대표님</span>');
+}
+function ts2time(ts) {
+  if (!ts) return '';
+  const d = new Date(ts), now = new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yest  = new Date(today); yest.setDate(yest.getDate()-1);
+  const hm = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  if (d >= today) return hm;
+  if (d >= yest)  return `어제 ${hm}`;
+  return `${d.getMonth()+1}/${d.getDate()} ${hm}`;
+}
+function ts2date(ts) {
+  const d = new Date(ts), now = new Date(); now.setHours(0,0,0,0);
+  const yest = new Date(now); yest.setDate(yest.getDate()-1);
+  if (d >= now) return '오늘';
+  if (d >= yest) return '어제';
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+function sameDay(a,b) { return new Date(a).toDateString() === new Date(b).toDateString(); }
+
+// ──────────────────────────────────────────────────────
+// AUTH
+// ──────────────────────────────────────────────────────
+function login(name, pw) {
+  if (!USERS.includes(name) || pw !== PASSWORD) return false;
+  user = { name };
+  try { localStorage.setItem('hmc_u', name); } catch(e) {}
+  return true;
+}
+function logout() {
+  try { localStorage.removeItem('hmc_u'); } catch(e) {}
+  location.reload();
+}
+function checkSession() {
+  try {
+    const n = localStorage.getItem('hmc_u');
+    if (n && USERS.includes(n)) { user = { name: n }; return true; }
+  } catch(e) {}
+  return false;
+}
+
+// ──────────────────────────────────────────────────────
+// FIREBASE INIT
+// ──────────────────────────────────────────────────────
+function initFirebase() {
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    onValue(dbRef(db, '.info/connected'), snap => {
+      const el = document.getElementById('db-status');
+      if (snap.val()) { el.textContent = '● 실시간 연결됨'; el.className = 'h-db ok'; }
+      else             { el.textContent = '연결 중...';     el.className = 'h-db'; }
+    });
+    listenRooms();
+    listenReviews();
+  } catch(e) {
+    document.getElementById('db-status').textContent = '연결 오류';
+    console.error('Firebase init error:', e);
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// ROOMS
+// ──────────────────────────────────────────────────────
+function listenRooms() {
+  if (listeners.rooms) listeners.rooms();
+  listeners.rooms = onValue(dbRef(db, 'rooms'), snap => {
+    allRooms = snap.val() || {};
+    renderRooms();
+  });
+}
+
+function renderRooms() {
+  const el  = document.getElementById('rooms-scroll');
+  const myRooms = Object.entries(allRooms)
+    .filter(([,r]) => r.members && r.members[user.name])
+    .sort(([,a],[,b]) => (a.createdAt||0) - (b.createdAt||0));
+
+  if (!myRooms.length) {
+    el.innerHTML = `<div class="center-msg" style="line-height:1.8;font-size:12px">
+      참여 중인 채팅방이 없습니다.<br><strong>+</strong> 버튼으로 만들어보세요!
+    </div>`;
+    return;
+  }
+  el.innerHTML = '';
+  myRooms.forEach(([id, room]) => {
+    const d = document.createElement('div');
+    d.className = 'room-item' + (id === curRoomId ? ' active' : '');
+    d.dataset.id = id;
+    const cnt = Object.keys(room.members || {}).length;
+    d.innerHTML = `
+      <span class="room-hash">#</span>
+      <div class="room-info">
+        <div class="room-nm">${esc(room.name)}</div>
+        <div class="room-cnt">${cnt}명</div>
+      </div>`;
+    d.onclick = () => selectRoom(id);
+    el.appendChild(d);
+  });
+}
+
+function selectRoom(id) {
+  curRoomId = id;
+  curRoom   = allRooms[id] || null;
+
+  document.querySelectorAll('.room-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+
+  const hdr = document.getElementById('chat-hdr');
+  hdr.hidden = false;
+  document.getElementById('chat-room-name').textContent = curRoom?.name || '';
+  const chips = document.getElementById('member-chips');
+  chips.innerHTML = Object.keys(curRoom?.members || {})
+    .map(m => `<span class="m-chip" style="color:${ucolor(m)}">${esc(m)}</span>`).join('');
+
+  document.getElementById('input-area').hidden = false;
+  document.getElementById('msgs').innerHTML =
+    '<div class="center-msg"><span class="spinner"></span>메시지 불러오는 중...</div>';
+
+  listenMessages(id);
+}
+
+async function createRoom(name, members) {
+  const allMem = [user.name, ...members].reduce((acc, n) => { acc[n] = true; return acc; }, {});
+  const newRef = push(dbRef(db, 'rooms'));
+  await set(newRef, { name, members: allMem, createdAt: Date.now(), createdBy: user.name });
+  return newRef.key;
+}
+
+// ──────────────────────────────────────────────────────
+// MESSAGES
+// ──────────────────────────────────────────────────────
+function listenMessages(roomId) {
+  if (listeners.msgs) listeners.msgs();
+  const msgsQuery = query(dbRef(db, `messages/${roomId}`), orderByChild('timestamp'), limitToLast(200));
+  listeners.msgs = onValue(msgsQuery, snap => {
+    const msgs = [];
+    snap.forEach(c => msgs.push({ id: c.key, ...c.val() }));
+    renderMessages(msgs);
+  });
+}
+
+function renderMessages(msgs) {
+  const container = document.getElementById('msgs');
+  const atBottom  = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+  container.innerHTML = '';
+
+  if (!msgs.length) {
+    container.innerHTML = `<div class="chat-empty">
+      <div style="font-size:36px">👋</div>
+      <div style="font-size:13px;color:var(--text-sec)">${esc(curRoom?.name||'')} 채팅방에 오신 걸 환영합니다!</div>
+      <div style="font-size:12px">첫 메시지를 남겨보세요.</div>
+    </div>`;
+    return;
+  }
+
+  let prev = null;
+  msgs.forEach(msg => {
+    if (!prev || !sameDay(prev.timestamp, msg.timestamp)) {
+      const dv = document.createElement('div');
+      dv.className = 'date-div';
+      dv.innerHTML = `<span>${esc(ts2date(msg.timestamp))}</span>`;
+      container.appendChild(dv);
+    }
+    const isMe       = msg.userName === user.name;
+    const tagged     = !!msg.hasTag;
+    const color      = ucolor(msg.userName);
+    const initial    = (msg.userName||'?')[0];
+    const showSender = !prev || prev.userName !== msg.userName || !sameDay(prev.timestamp, msg.timestamp);
+
+    const wrap = document.createElement('div');
+    wrap.className = `msg-group ${isMe ? 'me' : ''}`;
+
+    if (isMe) {
+      wrap.innerHTML = `
+        <div class="msg-col">
+          <div class="msg-row">
+            <div class="msg-ts">${esc(ts2time(msg.timestamp))}</div>
+            <div class="bubble me${tagged?' tagged':''}">${tagHL(msg.text||'')}</div>
+          </div>
+        </div>`;
+    } else {
+      wrap.innerHTML = `
+        <div class="av-wrap">
+          ${showSender ? `<div class="av" style="background:${color}">${esc(initial)}</div>` : '<div style="width:32px"></div>'}
+        </div>
+        <div class="msg-col">
+          ${showSender ? `<div class="msg-sender" style="color:${color}">${esc(msg.userName)}</div>` : ''}
+          <div class="msg-row">
+            <div class="bubble them${tagged?' tagged':''}">${tagHL(msg.text||'')}</div>
+            <div class="msg-ts">${esc(ts2time(msg.timestamp))}</div>
+          </div>
+        </div>`;
+    }
+    container.appendChild(wrap);
+    prev = msg;
+  });
+
+  if (atBottom || !prev) container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text  = input.value.trim();
+  if (!text || !curRoomId || !db) return;
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+
+  const hasTag  = text.includes('@부대표님');
+  const timestamp = Date.now();
+
+  try {
+    const msgRef = await push(dbRef(db, `messages/${curRoomId}`), {
+      userName: user.name,
+      text,
+      timestamp,
+      hasTag
+    });
+
+    if (hasTag) {
+      await push(dbRef(db, 'reviews'), {
+        msgId:    msgRef.key,
+        text,
+        roomId:   curRoomId,
+        roomName: curRoom?.name || '',
+        userName: user.name,
+        timestamp,
+        checked:  false
+      });
+    }
+
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('msgs').scrollTop = 9999999;
+  } catch(e) {
+    alert('메시지 전송 실패. 다시 시도해주세요.\n' + e.message);
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// REVIEWS
+// ──────────────────────────────────────────────────────
+function listenReviews() {
+  if (listeners.reviews) listeners.reviews();
+  const revQuery = query(dbRef(db, 'reviews'), orderByChild('timestamp'));
+  listeners.reviews = onValue(revQuery, snap => {
+    const all = [];
+    snap.forEach(c => all.push({ id: c.key, ...c.val() }));
+    renderReviews(all);
+  });
+}
+
+function renderReviews(all) {
+  const pend = all.filter(r => !r.checked);
+  const done = all.filter(r =>  r.checked);
+
+  const pb = document.getElementById('pend-badge');
+  pb.textContent = pend.length;
+  pb.className   = 'badge' + (pend.length ? '' : ' empty');
+
+  const db2 = document.getElementById('done-badge');
+  db2.textContent = done.length;
+  db2.className   = 'badge done' + (done.length ? '' : ' empty');
+
+  const pendList = document.getElementById('pend-list');
+  pendList.innerHTML = '';
+  if (!pend.length) {
+    pendList.innerHTML = '<div class="no-rev">@부대표님 태그된<br>메시지가 여기 모입니다</div>';
+  } else {
+    pend.forEach(r => pendList.appendChild(makeRevItem(r, false)));
+  }
+
+  const doneList = document.getElementById('done-list');
+  doneList.innerHTML = '';
+  if (!done.length) {
+    doneList.innerHTML = '<div class="no-rev" style="font-size:11px">완료 항목이 표시됩니다</div>';
+  } else {
+    done.forEach(r => doneList.appendChild(makeRevItem(r, true)));
+  }
+}
+
+function makeRevItem(r, isDone) {
+  const el    = document.createElement('div');
+  el.className = 'rev-item' + (isDone ? ' done' : '');
+  const color  = ucolor(r.userName);
+  el.innerHTML = `
+    <div class="rev-cb-wrap">
+      <input type="checkbox" class="rev-cb" ${isDone ? 'checked' : ''}>
+    </div>
+    <div class="rev-body">
+      <div class="rev-meta">
+        <span style="display:inline-flex;align-items:center;justify-content:center;
+          width:15px;height:15px;border-radius:50%;background:${color};color:#fff;
+          font-size:9px;font-weight:700;margin-right:3px;">${esc((r.userName||'?')[0])}</span>
+        ${esc(r.userName)} · <span style="color:var(--primary)">${esc(r.roomName||'')}</span>
+      </div>
+      <div class="rev-text">${tagHL(r.text||'')}</div>
+      <div class="rev-time">${esc(ts2time(r.timestamp))}</div>
+    </div>`;
+  el.querySelector('.rev-cb').addEventListener('change', async (e) => {
+    e.target.disabled = true;
+    try {
+      await update(dbRef(db, `reviews/${r.id}`), {
+        checked:   !isDone,
+        checkedAt: !isDone ? Date.now() : null
+      });
+    } catch(err) {
+      e.target.checked = isDone;
+      alert('업데이트 실패: ' + err.message);
+    } finally {
+      e.target.disabled = false;
+    }
+  });
+  return el;
+}
+
+// ──────────────────────────────────────────────────────
+// MODAL
+// ──────────────────────────────────────────────────────
+function showModal() {
+  const grid = document.getElementById('member-grid');
+  grid.innerHTML = '';
+  USERS.filter(u => u !== user.name).forEach(u => {
+    const lbl = document.createElement('label');
+    lbl.className = 'mb-lbl';
+    lbl.innerHTML = `
+      <input type="checkbox" value="${esc(u)}">
+      <span class="mb-av" style="background:${ucolor(u)}">${esc(u[0])}</span>
+      <span class="mb-nm">${esc(u)}</span>`;
+    grid.appendChild(lbl);
+  });
+  document.getElementById('room-name-input').value = '';
+  document.getElementById('modal').hidden = false;
+  setTimeout(() => document.getElementById('room-name-input').focus(), 50);
+}
+
+async function confirmCreate() {
+  const name = document.getElementById('room-name-input').value.trim();
+  if (!name) { document.getElementById('room-name-input').focus(); return; }
+  const extra   = [...document.querySelectorAll('#member-grid input:checked')].map(cb => cb.value);
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = true; btn.textContent = '만드는 중...';
+  try {
+    const id = await createRoom(name, extra);
+    document.getElementById('modal').hidden = true;
+    setTimeout(() => selectRoom(id), 300);
+  } catch(e) {
+    alert('채팅방 생성 실패: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '채팅방 만들기';
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// EVENT LISTENERS
+// ──────────────────────────────────────────────────────
+document.getElementById('login-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = document.getElementById('uname-sel').value;
+  const pw   = document.getElementById('pw-input').value;
+  const err  = document.getElementById('login-err');
+  err.hidden = true;
+
+  if (!name) { err.textContent='이름을 선택해주세요.'; err.hidden=false; return; }
+  if (!pw)   { err.textContent='비밀번호를 입력해주세요.'; err.hidden=false; return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = '로그인 중...';
+
+  if (!login(name, pw)) {
+    err.textContent='비밀번호가 올바르지 않습니다.'; err.hidden=false;
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+    btn.disabled=false; btn.textContent='로그인';
+    return;
+  }
+  startApp();
+});
+
+document.getElementById('logout-btn').addEventListener('click', logout);
+
+document.getElementById('add-room-btn').addEventListener('click', () => {
+  if (!db) { alert('DB에 연결되지 않았습니다.'); return; }
+  showModal();
+});
+
+document.getElementById('cancel-btn').addEventListener('click', () => {
+  document.getElementById('modal').hidden = true;
+});
+
+document.getElementById('confirm-btn').addEventListener('click', confirmCreate);
+
+document.getElementById('room-name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); confirmCreate(); }
+});
+
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+document.getElementById('msg-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+document.getElementById('msg-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal'))
+    document.getElementById('modal').hidden = true;
+});
+
+// ──────────────────────────────────────────────────────
+// START
+// ──────────────────────────────────────────────────────
+function startApp() {
+  document.getElementById('login-screen').hidden = true;
+  document.getElementById('app').hidden = false;
+  document.getElementById('h-av').textContent   = user.name[0];
+  document.getElementById('h-av').style.background = ucolor(user.name);
+  document.getElementById('h-uname').textContent = user.name;
+  initFirebase();
+}
+
+if (checkSession()) startApp();
+</script>
+</body>
+</html>
