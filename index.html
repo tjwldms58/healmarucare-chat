@@ -1257,8 +1257,7 @@ async function sendMessage() {
     input.style.height = 'auto';
     document.getElementById('msgs').scrollTop = 9999999;
   } catch(e) {
-    alert('메시지 전송 실패. 다시 시도해주세요.
-' + e.message);
+    alert('메시지 전송 실패. 다시 시도해주세요. ' + e.message);
   } finally {
     btn.disabled = false;
     input.focus();
