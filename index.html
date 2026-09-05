@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.3 | 2026-09-05 | rooms onValue 빈스냅샷 false alarm으로 curRoomId null 리셋 버그 수정 -->
+<!-- v3.5 | 2026-09-05 | config/maintenance onValue 이중 호출 location.reload() 버그 수정 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -818,7 +818,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.3</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.5</p>
   </div>
 </div>
 
@@ -1682,6 +1682,7 @@ function initFirebaseEarly() {
     });
 
     // 점검 모드 실시간 감시 (config/maintenance = true 이면 점검 화면 표시)
+    let _prevMaintState = null; // v3.5: true→false 전환 시에만 reload
     onValue(dbRef(db, 'config/maintenance'), snap => {
       const isMaint = snap.val() === true;
       const maintEl  = document.getElementById('maintenance-screen');
@@ -1693,14 +1694,12 @@ function initFirebaseEarly() {
         appEl.hidden   = true;
       } else {
         maintEl.hidden = true;
-        // 점검 해제 시 페이지 새로고침 → 정상 로그인 흐름으로
-        if (!maintEl.dataset.first) {
-          // 최초 로드(false)는 새로고침 없이 그냥 통과
-          maintEl.dataset.first = 'done';
-        } else {
+        // 점검이 켜져 있다가 꺼진 경우에만 새로고침 (Firebase 이중 호출 false alarm 방지)
+        if (_prevMaintState === true) {
           location.reload();
         }
       }
+      _prevMaintState = isMaint;
     });
   } catch(e) {
     console.error('Firebase early init error:', e);
@@ -1783,17 +1782,15 @@ function listenRooms() {
       });
     });
 
-    // ② 제거된 방 → 구독 해제 + UI 정리
+    // ② 제거된 방 → 구독 해제만 (UI·curRoomId는 건드리지 않음)
+    // Firebase는 연결 불안정 시 userRooms를 빈 스냅샷으로 먼저 발화(false alarm)할 수 있음.
+    // 그 때 input-area.hidden=true / curRoomId=null 로 만들면 입력이 완전히 막히는 버그 발생.
+    // 실제 방 삭제는 renderRooms()가 allRooms 기반으로 목록을 갱신하면 자연히 반영됨.
     prevRoomIds.forEach(rid => {
       if (!currentRoomIds.has(rid)) {
         if (roomListeners[rid]) { roomListeners[rid](); delete roomListeners[rid]; }
         delete allRooms[rid];
-        if (curRoomId === rid) {
-          curRoomId = null; curRoom = null;
-          document.getElementById('chat-hdr').hidden   = true;
-          document.getElementById('input-area').hidden = true;
-          document.getElementById('msgs').innerHTML    = '';
-        }
+        // curRoomId / input-area / chat-hdr 는 여기서 절대 변경하지 않음
       }
     });
 
@@ -2699,8 +2696,12 @@ document.getElementById('input-area').addEventListener('click', () => {
   if (inp && !inp.disabled) inp.focus();
 });
 
+// 한국어 IME 조합 중 Enter를 누르면 오발화하는 버그 방지
+let _imeComposing = false;
+document.getElementById('msg-input').addEventListener('compositionstart', () => { _imeComposing = true; });
+document.getElementById('msg-input').addEventListener('compositionend',   () => { _imeComposing = false; });
 document.getElementById('msg-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey && !_imeComposing) { e.preventDefault(); sendMessage(); }
 });
 
 document.getElementById('msg-input').addEventListener('input', function() {
