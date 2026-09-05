@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.8 | 2026-09-05 | 3탭시스템·팀원요청·@경영지원태그·탭별권한관리 -->
+<!-- v2.9 | 2026-09-05 | 팀원요청·경영지원탭에 파일섹션추가·탭3개표시수정 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -816,7 +816,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.8</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.9</p>
   </div>
 </div>
 
@@ -1112,6 +1112,16 @@
               <div class="no-rev" style="font-size:11px">완료된 팀원요청이<br>여기 표시됩니다</div>
             </div>
           </div>
+          <div class="rev-files">
+            <div class="sec-hdr">
+              <div class="sec-dot file"></div>
+              <button class="sec-lbl-btn" onclick="openDetailModal('team-files')" title="크게 보기">파일 및 이미지</button>
+              <div class="badge blue" id="team-files-badge">0</div>
+            </div>
+            <div class="rev-list" id="team-files-list">
+              <div class="no-rev" style="font-size:11px">첨부된 파일과 이미지가<br>여기 표시됩니다</div>
+            </div>
+          </div>
         </div>
 
         <!-- 탭 3: 업무요청(경영) (@경영지원) -->
@@ -1134,6 +1144,16 @@
             </div>
             <div class="rev-list" id="work-done-list">
               <div class="no-rev" style="font-size:11px">완료된 업무요청이<br>여기 표시됩니다</div>
+            </div>
+          </div>
+          <div class="rev-files">
+            <div class="sec-hdr">
+              <div class="sec-dot file"></div>
+              <button class="sec-lbl-btn" onclick="openDetailModal('work-files')" title="크게 보기">파일 및 이미지</button>
+              <div class="badge blue" id="work-files-badge">0</div>
+            </div>
+            <div class="rev-list" id="work-files-list">
+              <div class="no-rev" style="font-size:11px">첨부된 파일과 이미지가<br>여기 표시됩니다</div>
             </div>
           </div>
         </div>
@@ -2143,39 +2163,52 @@ function listenFiles() {
 
 function renderFilesGallery(files) {
   cachedFiles = files;
-  if (detailModalType === 'files') renderDetailModal();
+  if (detailModalType === 'files' || detailModalType === 'team-files' || detailModalType === 'work-files') renderDetailModal();
+  // 검토요청 탭 파일 뱃지
   const el    = document.getElementById('files-list');
   const badge = document.getElementById('files-badge');
-  badge.textContent = files.length;
-  badge.className   = 'badge blue' + (files.length ? '' : ' empty');
-  el.innerHTML = '';
-  if (!files.length) {
-    el.innerHTML = '<div class="no-rev" style="font-size:11px">첨부된 파일과 이미지가<br>여기 표시됩니다</div>';
-    return;
-  }
-  files.forEach(f => {
-    const a = document.createElement('a');
-    a.className = 'file-gal-item';
-    a.href = f.fileUrl;
-    a.target = '_blank';
-    if (f.fileType === 'image') {
-      a.onclick = (e) => { e.preventDefault(); openLightbox(f.fileUrl); };
-      a.innerHTML = `
-        <img class="file-gal-thumb" src="${esc(f.fileUrl)}" alt="${esc(f.fileName)}">
-        <div class="file-gal-info">
-          <div class="file-gal-nm">${esc(f.fileName)}</div>
-          <div class="file-gal-sub">${esc(f.userName)} · ${esc(f.roomName||'')}</div>
-        </div>`;
-    } else {
-      a.innerHTML = `
-        <div class="file-gal-icon">${fileIcon(f.fileName)}</div>
-        <div class="file-gal-info">
-          <div class="file-gal-nm">${esc(f.fileName)}</div>
-          <div class="file-gal-sub">${esc(f.userName)} · ${esc(f.roomName||'')}</div>
-        </div>`;
+  if (badge) { badge.textContent = files.length; badge.className = 'badge blue' + (files.length ? '' : ' empty'); }
+  // 팀원요청 탭 파일 뱃지
+  const teamFilesBadge = document.getElementById('team-files-badge');
+  if (teamFilesBadge) { teamFilesBadge.textContent = files.length; teamFilesBadge.className = 'badge blue' + (files.length ? '' : ' empty'); }
+  // 경영지원 탭 파일 뱃지
+  const workFilesBadge = document.getElementById('work-files-badge');
+  if (workFilesBadge) { workFilesBadge.textContent = files.length; workFilesBadge.className = 'badge blue' + (files.length ? '' : ' empty'); }
+  // 패널 내 파일 미리보기 렌더링 헬퍼
+  function renderFilesIntoEl(el) {
+    if (!el) return;
+    el.innerHTML = '';
+    if (!files.length) {
+      el.innerHTML = '<div class="no-rev" style="font-size:11px">첨부된 파일과 이미지가<br>여기 표시됩니다</div>';
+      return;
     }
-    el.appendChild(a);
-  });
+    files.forEach(f => {
+      const a = document.createElement('a');
+      a.className = 'file-gal-item';
+      a.href = f.fileUrl;
+      a.target = '_blank';
+      if (f.fileType === 'image') {
+        a.onclick = (e) => { e.preventDefault(); openLightbox(f.fileUrl); };
+        a.innerHTML = `
+          <img class="file-gal-thumb" src="${esc(f.fileUrl)}" alt="${esc(f.fileName)}">
+          <div class="file-gal-info">
+            <div class="file-gal-nm">${esc(f.fileName)}</div>
+            <div class="file-gal-sub">${esc(f.userName)} · ${esc(f.roomName||'')}</div>
+          </div>`;
+      } else {
+        a.innerHTML = `
+          <div class="file-gal-icon">${fileIcon(f.fileName)}</div>
+          <div class="file-gal-info">
+            <div class="file-gal-nm">${esc(f.fileName)}</div>
+            <div class="file-gal-sub">${esc(f.userName)} · ${esc(f.roomName||'')}</div>
+          </div>`;
+      }
+      el.appendChild(a);
+    });
+  }
+  renderFilesIntoEl(document.getElementById('files-list'));
+  renderFilesIntoEl(document.getElementById('team-files-list'));
+  renderFilesIntoEl(document.getElementById('work-files-list'));
 }
 
 // ──────────────────────────────────────────────────────
@@ -3173,6 +3206,20 @@ function renderDetailModal() {
       } else {
         items.forEach(r => bodyEl.appendChild(makeDetailRevItem(r, true, 'work')));
       }
+      break;
+    }
+    case 'team-files': {
+      titleEl.textContent = '파일 및 이미지 (팀원요청)';
+      countEl.textContent = `${cachedFiles.length}건`;
+      bodyEl.innerHTML = '';
+      renderDetailFiles(bodyEl);
+      break;
+    }
+    case 'work-files': {
+      titleEl.textContent = '파일 및 이미지 (경영지원)';
+      countEl.textContent = `${cachedFiles.length}건`;
+      bodyEl.innerHTML = '';
+      renderDetailFiles(bodyEl);
       break;
     }
   }
