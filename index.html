@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.9 | 2026-09-05 | 팀원요청·경영지원탭에 파일섹션추가·탭3개표시수정 -->
+<!-- v3.0 | 2026-09-05 | 팀원요청·경영지원탭에 파일섹션추가·메시지리스너자동재연결 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -816,7 +816,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.9</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.0</p>
   </div>
 </div>
 
@@ -1270,7 +1270,7 @@ import { getDatabase, ref as dbRef, onValue, off, push, set, update, get, query,
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
-import { getAuth, signInAnonymously }
+import { getAuth, signInAnonymously, onAuthStateChanged }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 // ──────────────────────────────────────────────────────
@@ -1485,6 +1485,18 @@ function login(name, pw) {
 // Firebase 익명 인증 → uid : userName 매핑 저장 (Security Rules용)
 async function signInToFirebase() {
   if (!auth) return;
+  // auth 상태 변경 시(토큰 갱신·uid 재발급 등) userSessions 자동 갱신
+  onAuthStateChanged(auth, async (firebaseUser) => {
+    if (firebaseUser && user?.name) {
+      try {
+        await set(dbRef(db, `userSessions/${firebaseUser.uid}`), user.name);
+        // 세션 갱신 후 메시지 리스너가 끊어졌으면 재연결
+        if (curRoomId && !listeners.msgs) listenMessages(curRoomId);
+      } catch(e) {
+        console.warn('userSessions 갱신 실패:', e);
+      }
+    }
+  });
   try {
     const cred = await signInAnonymously(auth);
     const uid  = cred.user.uid;
@@ -1848,6 +1860,7 @@ async function createRoom(name, members) {
 // ──────────────────────────────────────────────────────
 function listenMessages(roomId) {
   if (listeners.msgs) listeners.msgs();
+  listeners.msgs = null;
   const msgsQuery = query(dbRef(db, `messages/${roomId}`), orderByChild('timestamp'), limitToLast(200));
   let firstLoad = true;
   listeners.msgs = onValue(msgsQuery, snap => {
@@ -1866,6 +1879,18 @@ function listenMessages(roomId) {
       if (msgs.length > 0) lastSeenTs[roomId] = msgs[msgs.length-1].timestamp;
     }
     renderMessages(msgs);
+  }, (err) => {
+    // 권한 오류 등으로 리스너가 끊어지면 → userSessions 재갱신 후 3초 후 재연결
+    console.error('Messages listener error (자동 재연결 시도):', err.message);
+    listeners.msgs = null;
+    // userSessions 재등록 시도
+    if (auth?.currentUser && user?.name) {
+      set(dbRef(db, `userSessions/${auth.currentUser.uid}`), user.name)
+        .catch(() => {});
+    }
+    setTimeout(() => {
+      if (curRoomId === roomId) listenMessages(roomId);
+    }, 3000);
   });
 }
 
