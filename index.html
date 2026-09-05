@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.16 | 2026-09-05 | 검토현황 휴지통 제거 (검토완료에만 표시) -->
+<!-- v3.17 | 2026-09-05 | 완료 섹션 뱃지 제거 (미완료 섹션만 알람 표시) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -854,7 +854,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.16</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.17</p>
   </div>
 </div>
 
@@ -1132,7 +1132,6 @@
             <div class="sec-hdr">
               <div class="sec-dot done"></div>
               <button class="sec-lbl-btn" onclick="openDetailModal('done')" title="크게 보기">검토완료</button>
-              <div class="badge done" id="done-badge">0</div>
             </div>
             <div class="rev-list" id="done-list">
               <div class="no-rev" style="font-size:11px">완료 항목이 표시됩니다</div>
@@ -1166,7 +1165,6 @@
             <div class="sec-hdr">
               <div class="sec-dot done"></div>
               <button class="sec-lbl-btn" onclick="openDetailModal('team-done')" title="크게 보기">팀원 완료</button>
-              <div class="badge done" id="team-done-badge">0</div>
             </div>
             <div class="rev-list" id="team-done-list">
               <div class="no-rev" style="font-size:11px">완료된 팀원요청이<br>여기 표시됩니다</div>
@@ -1200,7 +1198,6 @@
             <div class="sec-hdr">
               <div class="sec-dot done"></div>
               <button class="sec-lbl-btn" onclick="openDetailModal('work-done')" title="크게 보기">업무 완료</button>
-              <div class="badge done" id="work-done-badge">0</div>
             </div>
             <div class="rev-list" id="work-done-list">
               <div class="no-rev" style="font-size:11px">완료된 업무요청이<br>여기 표시됩니다</div>
@@ -2522,8 +2519,6 @@ function renderReviews(all) {
   if (tabBadge) tabBadge.textContent = pend.length;
   const pb = document.getElementById('pend-badge');
   pb.textContent = pend.length; pb.className = 'badge' + (pend.length ? '' : ' empty');
-  const db2 = document.getElementById('done-badge');
-  db2.textContent = done.length; db2.className = 'badge done' + (done.length ? '' : ' empty');
 
   const pendList = document.getElementById('pend-list');
   pendList.innerHTML = '';
@@ -2604,8 +2599,6 @@ function renderTeamReviews(all) {
 
   const pb = document.getElementById('team-pend-badge');
   if (pb) { pb.textContent = pend.length; pb.className = 'badge' + (pend.length ? '' : ' empty'); pb.style.background = pend.length ? '#9B59B6' : ''; }
-  const db2 = document.getElementById('team-done-badge');
-  if (db2) { db2.textContent = done.length; db2.className = 'badge done' + (done.length ? '' : ' empty'); }
 
   const pendList = document.getElementById('team-pend-list');
   if (pendList) {
@@ -2701,8 +2694,6 @@ function renderWorkRequests(all) {
 
   const pb = document.getElementById('work-pend-badge');
   if (pb) { pb.textContent = pend.length; pb.className = 'badge' + (pend.length ? '' : ' empty'); pb.style.background = pend.length ? '#27AE60' : ''; }
-  const db2 = document.getElementById('work-done-badge');
-  if (db2) { db2.textContent = done.length; db2.className = 'badge done' + (done.length ? '' : ' empty'); }
 
   const pendList = document.getElementById('work-pend-list');
   if (pendList) {
