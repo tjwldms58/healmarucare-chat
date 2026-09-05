@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.5 | 2026-09-05 | config/maintenance onValue 이중 호출 location.reload() 버그 수정 -->
+<!-- v3.6 | 2026-09-05 | 멤버 선택 체크박스 Electron 버그 수정 + maintenance reload 버그 수정 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -818,7 +818,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.5</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.6</p>
   </div>
 </div>
 
@@ -2574,10 +2574,28 @@ function showModal() {
   USERS.filter(u => u !== user.name).forEach(u => {
     const lbl = document.createElement('label');
     lbl.className = 'mb-lbl';
-    lbl.innerHTML = `
-      <input type="checkbox" value="${esc(u)}">
-      <span class="mb-av" style="background:${ucolor(u)}">${esc(dName(u)[0])}</span>
-      <span class="mb-nm">${esc(dName(u))}</span>`;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = u;
+    // v3.5: Electron 체크박스 클릭 안되는 버그 대비 명시적 핸들러
+    cb.addEventListener('change', () => {
+      lbl.style.borderColor = cb.checked ? 'var(--primary)' : '';
+      lbl.style.background  = cb.checked ? 'var(--primary-lt)' : '';
+    });
+
+    const av = document.createElement('span');
+    av.className = 'mb-av';
+    av.style.background = ucolor(u);
+    av.textContent = dName(u)[0];
+
+    const nm = document.createElement('span');
+    nm.className = 'mb-nm';
+    nm.textContent = dName(u);
+
+    lbl.appendChild(cb);
+    lbl.appendChild(av);
+    lbl.appendChild(nm);
     grid.appendChild(lbl);
   });
   document.getElementById('room-name-input').value = '';
