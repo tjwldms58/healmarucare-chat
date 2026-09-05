@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.9 | 2026-09-05 | 채팅 낙관적 렌더링 / UI 아이콘·버튼 통합 / 멤버목록 갱신 -->
+<!-- v3.11 | 2026-09-05 | 관리자 권한 양도 기능 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -834,7 +834,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.9</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.10</p>
   </div>
 </div>
 
@@ -954,6 +954,12 @@
       <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">멤버 직책 관리</p>
       <div style="background:var(--sidebar);border-radius:var(--rs);padding:12px;max-height:200px;overflow-y:auto" id="admin-role-list"></div>
       <p id="admin-role-msg" style="font-size:12px;color:var(--accent);margin-top:8px;display:none">저장되었습니다!</p>
+
+      <!-- 관리자 권한 양도 -->
+      <hr style="border:none;border-top:1px solid var(--border-lt);margin:20px 0 16px">
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">관리자 권한 양도</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">퇴사 또는 담당자 변경 시 관리자 권한을 다른 멤버에게 넘길 수 있습니다.<br>양도 후에는 이 패널에 접근할 수 없게 됩니다.</p>
+      <div id="admin-transfer-wrap"></div>
     </div>
     <div class="modal-foot">
       <button class="btn-primary" id="admin-panel-close-btn" style="width:auto;padding:10px 22px">닫기</button>
@@ -1327,7 +1333,7 @@ const firebaseConfig = {
 // ──────────────────────────────────────────────────────
 let   USERS        = ['민경필','차규은','이청용','서지은','허수빈','강수희'];
 const PASSWORD     = 'healmarucare!';
-const ADMIN_USER   = '서지은';
+let   ADMIN_USER   = '서지은'; // Firebase config/adminUser 로 덮어씀
 const ADMIN_PWD    = 'rudckf@8899';
 let   reviewUsers       = ['민경필','차규은','이청용','서지은']; // 검토요청 탭 접근 권한
 let   teamReviewUsers   = ['민경필','차규은','이청용','서지은']; // 팀원요청 탭 접근 권한
@@ -1657,6 +1663,81 @@ async function loadRoles() {
     if (snap.exists()) userRoles = snap.val() || {};
   } catch(e) {}
 }
+
+// ──────────────────────────────────────────────────────
+// ADMIN TRANSFER (관리자 권한 양도)
+// ──────────────────────────────────────────────────────
+async function loadAdminUser() {
+  try {
+    const snap = await get(dbRef(db, 'config/adminUser'));
+    if (snap.exists() && snap.val()) ADMIN_USER = snap.val();
+  } catch(e) {}
+}
+async function transferAdmin(newAdmin) {
+  if (!newAdmin || newAdmin === ADMIN_USER) return;
+  try {
+    await set(dbRef(db, 'config/adminUser'), newAdmin);
+    ADMIN_USER = newAdmin;
+    // 현재 로그인 유저가 더 이상 관리자가 아니면 버튼 숨김
+    if (user.name !== ADMIN_USER) {
+      document.getElementById('admin-btn').hidden = true;
+      document.getElementById('admin-panel-modal').hidden = true;
+    }
+    renderTransferSection();
+  } catch(e) {
+    alert('권한 양도 실패: ' + (e.code || e.message));
+  }
+}
+function renderTransferSection() {
+  const wrap = document.getElementById('admin-transfer-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  const currentEl = document.createElement('p');
+  currentEl.style.cssText = 'font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6';
+  currentEl.innerHTML = `현재 관리자: <b style="color:var(--text-sec)">${esc(ADMIN_USER)}</b>`;
+  wrap.appendChild(currentEl);
+
+  if (user.name !== ADMIN_USER) {
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic';
+    note.textContent = '관리자만 권한을 양도할 수 있습니다.';
+    wrap.appendChild(note);
+    return;
+  }
+
+  const sel = document.createElement('select');
+  sel.style.cssText = 'width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--rs);font-size:13px;font-family:inherit;color:var(--text);background:var(--sidebar);outline:none;margin-bottom:10px';
+  const defOpt = document.createElement('option');
+  defOpt.value = '';
+  defOpt.textContent = '양도할 멤버 선택...';
+  sel.appendChild(defOpt);
+  USERS.filter(u => u !== ADMIN_USER).forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u;
+    opt.textContent = u;
+    sel.appendChild(opt);
+  });
+  wrap.appendChild(sel);
+
+  const transferBtn = document.createElement('button');
+  transferBtn.style.cssText = 'font-size:12px;padding:7px 16px;background:none;color:var(--text-muted);border:1.5px solid var(--border);border-radius:20px;cursor:pointer;transition:all .15s';
+  transferBtn.textContent = '권한 양도';
+  transferBtn.addEventListener('mouseenter', () => { transferBtn.style.borderColor = '#e55'; transferBtn.style.color = '#e55'; });
+  transferBtn.addEventListener('mouseleave', () => { transferBtn.style.borderColor = 'var(--border)'; transferBtn.style.color = 'var(--text-muted)'; });
+  transferBtn.addEventListener('click', async () => {
+    const target = sel.value;
+    if (!target) { alert('양도할 멤버를 선택해주세요.'); return; }
+    const ok = confirm(`정말로 관리자 권한을 "${target}"에게 양도하시겠습니까?\n\n이 작업은 되돌리기 어렵습니다.`);
+    if (!ok) return;
+    transferBtn.disabled = true;
+    transferBtn.textContent = '처리 중...';
+    await transferAdmin(target);
+    transferBtn.disabled = false;
+    transferBtn.textContent = '권한 양도';
+  });
+  wrap.appendChild(transferBtn);
+}
 async function saveRole(name, role) {
   userRoles[name] = role;
   try { await update(dbRef(db, 'config/roles'), { [name]: role }); }
@@ -1668,20 +1749,41 @@ function getUserRole(name) {
 function renderRoleList() {
   const el = document.getElementById('admin-role-list');
   if (!el) return;
-  el.innerHTML = USERS.map(u => `
-    <div class="role-row">
-      <span class="role-name">${esc(u)}</span>
-      <input class="role-input" id="role-input-${esc(u)}" type="text" placeholder="직책 입력" value="${esc(userRoles[u] || '')}">
-      <button class="role-save-btn" onclick="(async()=>{
-        const v=document.getElementById('role-input-${esc(u)}').value.trim();
-        await saveRole('${esc(u)}',v);
-        const msg=document.getElementById('admin-role-msg');
-        msg.style.display='block';
-        setTimeout(()=>msg.style.display='none',2000);
-        renderMemberList();
-      })()">저장</button>
-    </div>
-  `).join('');
+  el.innerHTML = '';
+  USERS.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'role-row';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'role-name';
+    nameSpan.textContent = u;
+
+    const inp = document.createElement('input');
+    inp.className = 'role-input';
+    inp.type = 'text';
+    inp.placeholder = '직책 입력';
+    inp.value = userRoles[u] || '';
+
+    const btn = document.createElement('button');
+    btn.className = 'role-save-btn';
+    btn.textContent = '저장';
+    btn.addEventListener('click', async () => {
+      const v = inp.value.trim();
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+      await saveRole(u, v);
+      btn.disabled = false;
+      btn.textContent = '저장';
+      const msg = document.getElementById('admin-role-msg');
+      if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 2000); }
+      renderMemberList();
+    });
+
+    row.appendChild(nameSpan);
+    row.appendChild(inp);
+    row.appendChild(btn);
+    el.appendChild(row);
+  });
 }
 
 // ──────────────────────────────────────────────────────
@@ -2636,31 +2738,39 @@ function showModal() {
   const grid = document.getElementById('member-grid');
   grid.innerHTML = '';
   USERS.filter(u => u !== user.name).forEach(u => {
-    const lbl = document.createElement('label');
-    lbl.className = 'mb-lbl';
+    // v3.9: label→div 교체 (Electron label 이중 이벤트 버그 방지)
+    const item = document.createElement('div');
+    item.className = 'mb-lbl';
+    item.style.cursor = 'pointer';
 
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.value = u;
-    // v3.5: Electron 체크박스 클릭 안되는 버그 대비 명시적 핸들러
-    cb.addEventListener('change', () => {
-      lbl.style.borderColor = cb.checked ? 'var(--primary)' : '';
-      lbl.style.background  = cb.checked ? 'var(--primary-lt)' : '';
-    });
+    cb.style.cssText = 'pointer-events:none;flex-shrink:0;width:15px;height:15px;accent-color:var(--primary)';
 
     const av = document.createElement('span');
     av.className = 'mb-av';
     av.style.background = ucolor(u);
     av.textContent = dName(u)[0];
+    av.style.pointerEvents = 'none';
 
     const nm = document.createElement('span');
     nm.className = 'mb-nm';
     nm.textContent = dName(u);
+    nm.style.pointerEvents = 'none';
 
-    lbl.appendChild(cb);
-    lbl.appendChild(av);
-    lbl.appendChild(nm);
-    grid.appendChild(lbl);
+    item.appendChild(cb);
+    item.appendChild(av);
+    item.appendChild(nm);
+
+    // div 클릭 → 체크박스 수동 토글 (Electron 안정적 처리)
+    item.addEventListener('click', () => {
+      cb.checked = !cb.checked;
+      item.style.borderColor = cb.checked ? 'var(--primary)' : '';
+      item.style.background  = cb.checked ? 'var(--primary-lt)' : '';
+    });
+
+    grid.appendChild(item);
   });
   document.getElementById('room-name-input').value = '';
   document.getElementById('modal').hidden = false;
@@ -2938,6 +3048,7 @@ document.getElementById('admin-pwd-confirm-btn').addEventListener('click', () =>
   document.getElementById('admin-pwd-modal').hidden = true;
   renderAdminUserList();
   renderRoleList();
+  renderTransferSection();
   document.getElementById('admin-panel-modal').hidden = false;
 });
 document.getElementById('admin-pwd-input').addEventListener('keydown', e => {
@@ -3242,8 +3353,11 @@ async function startApp() {
   requestNotifPermission();
   initSettingsPanel();
   await signInToFirebase(); // Firebase 익명 인증 완료 후에 채팅 시작
+  await loadAdminUser();   // 관리자 계정 Firebase에서 로드
   await loadRoles();
   await loadHelp();
+  // 관리자 버튼 가시성 재적용 (loadAdminUser 후)
+  document.getElementById('admin-btn').hidden = (user.name !== ADMIN_USER);
   renderMemberList();
   initFirebase();
 }
