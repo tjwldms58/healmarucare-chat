@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.6 | 2026-09-05 | 탭분리·업무요청시스템·@팀원태그·@부대표님버그수정 -->
+<!-- v2.7 | 2026-09-05 | 섹션제목클릭상세보기모달 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -350,6 +350,102 @@
     .rev-text { font-size: 13px; color: var(--text); line-height: 1.45; word-break: break-word; margin-bottom: 4px; }
     .rev-time { font-size: 11px; color: var(--text-muted); }
     .rev-item.done .rev-text, .rev-item.done .rev-meta { text-decoration: line-through; color: var(--text-muted); }
+
+    /* ── 섹션 헤더 클릭 ── */
+    .sec-lbl-btn {
+      flex: 1; background: none; border: none; padding: 0;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      text-align: left; cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      transition: color .15s;
+    }
+    .sec-lbl-btn:hover { color: var(--primary); }
+    .sec-lbl-btn::after {
+      content: '⤢'; font-size: 11px; color: var(--text-muted);
+      opacity: 0; transition: opacity .15s; margin-left: 2px;
+    }
+    .sec-hdr:hover .sec-lbl-btn::after { opacity: 1; }
+
+    /* ── 상세 보기 모달 ── */
+    #detail-modal { align-items: center; justify-content: center; }
+    .det-inner {
+      background: var(--surface); border-radius: 16px;
+      width: min(860px, 95vw); max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: var(--shadow-lg); overflow: hidden;
+    }
+    .det-hdr {
+      padding: 16px 22px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+      background: var(--sidebar);
+    }
+    .det-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .det-count  { font-size: 12px; color: var(--text-muted); margin-left: 6px; }
+    .det-close  {
+      margin-left: auto; background: none; border: none; font-size: 20px;
+      cursor: pointer; color: var(--text-muted); padding: 4px 8px;
+      border-radius: var(--rx); transition: background .12s;
+    }
+    .det-close:hover { background: var(--border-lt); color: var(--text); }
+    .det-body { flex: 1; overflow-y: auto; padding: 20px 22px; background: var(--bg); }
+
+    /* 상세 리뷰 카드 */
+    .det-rev-card {
+      display: flex; gap: 14px; padding: 16px 18px;
+      margin-bottom: 10px; background: var(--surface);
+      border-radius: var(--rs); border: 1px solid var(--border);
+      border-left: 3px solid var(--review-dot);
+    }
+    .det-rev-card.done { opacity: .75; border-left-color: var(--done-dot); }
+    .det-rev-card.work { border-left-color: #27AE60; }
+    .det-rev-card.work.done { border-left-color: var(--done-dot); }
+    .det-rev-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .det-rev-av {
+      width: 24px; height: 24px; border-radius: 50%;
+      color: #fff; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .det-rev-nm   { font-size: 13px; font-weight: 700; color: var(--text); }
+    .det-room-tag {
+      font-size: 11px; background: var(--primary-lt); color: var(--primary);
+      padding: 2px 8px; border-radius: 8px; cursor: pointer;
+    }
+    .det-room-tag:hover { background: var(--primary); color: #fff; }
+    .det-rev-time { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+    .det-rev-text { font-size: 14px; color: var(--text); line-height: 1.65; word-break: break-word; }
+    .det-rev-card.done .det-rev-text { text-decoration: line-through; color: var(--text-muted); }
+
+    /* 파일 그리드 */
+    .det-filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .det-filter-btn {
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      border: 1.5px solid var(--border); background: var(--surface);
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .det-filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .det-img-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px; margin-bottom: 16px;
+    }
+    .det-img-card {
+      border-radius: var(--rs); overflow: hidden; cursor: pointer;
+      border: 1px solid var(--border); background: var(--sidebar);
+      transition: box-shadow .15s;
+    }
+    .det-img-card:hover { box-shadow: var(--shadow); }
+    .det-img-card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+    .det-img-info { padding: 8px 10px; }
+    .det-img-nm  { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .det-img-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .det-img-room { font-size: 11px; color: var(--primary); margin-top: 1px; }
+    .det-doc-row {
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      background: var(--surface); border-radius: var(--rs);
+      border: 1px solid var(--border); margin-bottom: 8px;
+      text-decoration: none; color: var(--text); transition: background .12s;
+    }
+    .det-doc-row:hover { background: var(--primary-lt); }
+    .det-doc-dl { font-size: 12px; color: var(--primary); flex-shrink: 0; }
 
     /* ── 왼쪽 패널 탭 ── */
     .left-tab-bar {
@@ -720,7 +816,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.6</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.7</p>
   </div>
 </div>
 
@@ -823,6 +919,20 @@
     <div class="modal-foot">
       <button class="btn-primary" id="admin-panel-close-btn" style="width:auto;padding:10px 22px">닫기</button>
     </div>
+  </div>
+</div>
+
+<!-- ====== 상세 보기 모달 ====== -->
+<div class="overlay" id="detail-modal" hidden>
+  <div class="det-inner">
+    <div class="det-hdr">
+      <div>
+        <span class="det-title" id="detail-modal-title"></span>
+        <span class="det-count" id="detail-modal-count"></span>
+      </div>
+      <button class="det-close" id="detail-modal-close" title="닫기">✕</button>
+    </div>
+    <div class="det-body" id="detail-modal-body"></div>
   </div>
 </div>
 
@@ -945,7 +1055,7 @@
           <div class="rev-sec">
             <div class="sec-hdr">
               <div class="sec-dot pend"></div>
-              <div class="sec-lbl">검토현황</div>
+              <button class="sec-lbl-btn" onclick="openDetailModal('review')" title="크게 보기">검토현황</button>
               <div class="badge" id="pend-badge">0</div>
             </div>
             <div class="rev-list" id="pend-list">
@@ -955,7 +1065,7 @@
           <div class="rev-done">
             <div class="sec-hdr">
               <div class="sec-dot done"></div>
-              <div class="sec-lbl">검토완료</div>
+              <button class="sec-lbl-btn" onclick="openDetailModal('done')" title="크게 보기">검토완료</button>
               <div class="badge done" id="done-badge">0</div>
             </div>
             <div class="rev-list" id="done-list">
@@ -965,7 +1075,7 @@
           <div class="rev-files">
             <div class="sec-hdr">
               <div class="sec-dot file"></div>
-              <div class="sec-lbl">파일 및 이미지</div>
+              <button class="sec-lbl-btn" onclick="openDetailModal('files')" title="크게 보기">파일 및 이미지</button>
               <div class="badge blue" id="files-badge">0</div>
             </div>
             <div class="rev-list" id="files-list">
@@ -979,7 +1089,7 @@
           <div class="rev-sec">
             <div class="sec-hdr">
               <div class="sec-dot" style="background:#27AE60"></div>
-              <div class="sec-lbl">업무 미완료</div>
+              <button class="sec-lbl-btn" onclick="openDetailModal('work-pend')" title="크게 보기">업무 미완료</button>
               <div class="badge" id="work-pend-badge" style="background:#27AE60">0</div>
             </div>
             <div class="rev-list" id="work-pend-list">
@@ -989,7 +1099,7 @@
           <div class="rev-done">
             <div class="sec-hdr">
               <div class="sec-dot done"></div>
-              <div class="sec-lbl">업무 완료</div>
+              <button class="sec-lbl-btn" onclick="openDetailModal('work-done')" title="크게 보기">업무 완료</button>
               <div class="badge done" id="work-done-badge">0</div>
             </div>
             <div class="rev-list" id="work-done-list">
@@ -1155,6 +1265,10 @@ let curRoom      = null;
 let allRooms     = {};
 let listeners    = {};
 let lastSeenTs   = {};
+let cachedReviews      = [];
+let cachedFiles        = [];
+let cachedWorkRequests = [];
+let detailModalType    = null;
 let userProfiles = {};
 let cachedMsgs   = [];
 let communityImgFile = null;  // 커뮤니티 첨부 이미지
@@ -1973,6 +2087,8 @@ function listenFiles() {
 }
 
 function renderFilesGallery(files) {
+  cachedFiles = files;
+  if (detailModalType === 'files') renderDetailModal();
   const el    = document.getElementById('files-list');
   const badge = document.getElementById('files-badge');
   badge.textContent = files.length;
@@ -2023,6 +2139,8 @@ function listenReviews() {
 }
 
 function renderReviews(all) {
+  cachedReviews = all;
+  if (detailModalType === 'review' || detailModalType === 'done') renderDetailModal();
   // 최신순 정렬 (내림차순)
   const pend = all.filter(r => !r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
   const done = all.filter(r =>  r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
@@ -2087,6 +2205,8 @@ function listenWorkRequests() {
 }
 
 function renderWorkRequests(all) {
+  cachedWorkRequests = all;
+  if (detailModalType === 'work-pend' || detailModalType === 'work-done') renderDetailModal();
   const pend = all.filter(r => !r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
   const done = all.filter(r =>  r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
 
@@ -2789,6 +2909,217 @@ async function startApp() {
   renderMemberList();
   initFirebase();
 }
+
+// ──────────────────────────────────────────────────────
+// DETAIL MODAL (섹션 제목 클릭 → 상세 보기)
+// ──────────────────────────────────────────────────────
+let _detFileFilter = 'all'; // 'all' | 'image' | 'doc'
+
+function openDetailModal(type) {
+  detailModalType = type;
+  _detFileFilter  = 'all';
+  renderDetailModal();
+  document.getElementById('detail-modal').hidden = false;
+}
+
+function closeDetailModal() {
+  document.getElementById('detail-modal').hidden = true;
+  detailModalType = null;
+}
+
+function renderDetailModal() {
+  if (!detailModalType) return;
+  const titleEl = document.getElementById('detail-modal-title');
+  const countEl = document.getElementById('detail-modal-count');
+  const bodyEl  = document.getElementById('detail-modal-body');
+  if (!titleEl || !bodyEl) return;
+
+  switch (detailModalType) {
+    case 'review': {
+      const items = cachedReviews.filter(r => !r.checked)
+                                 .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      titleEl.textContent = '검토현황';
+      countEl.textContent = `${items.length}건`;
+      bodyEl.innerHTML = '';
+      if (!items.length) {
+        bodyEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px 0;font-size:14px">@부대표님 태그된 메시지가 없습니다</div>';
+      } else {
+        items.forEach(r => bodyEl.appendChild(makeDetailRevItem(r, false, false)));
+      }
+      break;
+    }
+    case 'done': {
+      const items = cachedReviews.filter(r => r.checked)
+                                 .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      titleEl.textContent = '검토완료';
+      countEl.textContent = `${items.length}건`;
+      bodyEl.innerHTML = '';
+      if (!items.length) {
+        bodyEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px 0;font-size:14px">완료된 항목이 없습니다</div>';
+      } else {
+        items.forEach(r => bodyEl.appendChild(makeDetailRevItem(r, true, false)));
+      }
+      break;
+    }
+    case 'files': {
+      titleEl.textContent = '파일 및 이미지';
+      countEl.textContent = `${cachedFiles.length}건`;
+      bodyEl.innerHTML = '';
+      renderDetailFiles(bodyEl);
+      break;
+    }
+    case 'work-pend': {
+      const items = cachedWorkRequests.filter(r => !r.checked)
+                                      .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      titleEl.textContent = '업무 미완료';
+      countEl.textContent = `${items.length}건`;
+      bodyEl.innerHTML = '';
+      if (!items.length) {
+        bodyEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px 0;font-size:14px">@팀원 태그된 업무요청이 없습니다</div>';
+      } else {
+        items.forEach(r => bodyEl.appendChild(makeDetailRevItem(r, false, true)));
+      }
+      break;
+    }
+    case 'work-done': {
+      const items = cachedWorkRequests.filter(r => r.checked)
+                                      .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      titleEl.textContent = '업무 완료';
+      countEl.textContent = `${items.length}건`;
+      bodyEl.innerHTML = '';
+      if (!items.length) {
+        bodyEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px 0;font-size:14px">완료된 업무요청이 없습니다</div>';
+      } else {
+        items.forEach(r => bodyEl.appendChild(makeDetailRevItem(r, true, true)));
+      }
+      break;
+    }
+  }
+}
+
+function makeDetailRevItem(r, isDone, isWork) {
+  const el = document.createElement('div');
+  el.className = 'det-rev-card' + (isDone ? ' done' : '') + (isWork ? ' work' : '');
+  const color  = ucolor(r.userName);
+  const dispN  = dName(r.userName);
+  const accentColor = isWork ? '#27AE60' : 'var(--primary)';
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:4px;align-items:center;padding-top:2px">
+      <input type="checkbox" class="rev-cb" ${isDone?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:${accentColor}">
+    </div>
+    <div style="flex:1;min-width:0">
+      <div class="det-rev-meta">
+        <div class="det-rev-av" style="background:${color}">${esc((dispN||'?')[0])}</div>
+        <span class="det-rev-nm">${esc(dispN)}</span>
+        <span class="det-room-tag" data-room="${esc(r.roomId||'')}">${esc(r.roomName||'')}</span>
+        <span class="det-rev-time">${esc(ts2time(r.timestamp))}</span>
+      </div>
+      <div class="det-rev-text">${tagHL(r.text||'')}</div>
+    </div>`;
+
+  // 체크박스 토글
+  el.querySelector('.rev-cb').addEventListener('change', async (e) => {
+    e.target.disabled = true;
+    const path = isWork ? `workRequests/${r.id}` : `reviews/${r.id}`;
+    try {
+      await update(dbRef(db, path), { checked: !isDone, checkedAt: !isDone ? Date.now() : null });
+    } catch(err) {
+      e.target.checked = isDone;
+      alert('업데이트 실패: ' + err.message);
+    } finally { e.target.disabled = false; }
+  });
+
+  // 방 태그 클릭 → 해당 방으로 이동
+  el.querySelector('.det-room-tag').addEventListener('click', () => {
+    if (r.roomId && allRooms[r.roomId]) {
+      closeDetailModal();
+      selectRoom(r.roomId);
+    }
+  });
+
+  return el;
+}
+
+function renderDetailFiles(container) {
+  const filt = _detFileFilter;
+  // 필터 바
+  const bar = document.createElement('div');
+  bar.className = 'det-filter-bar';
+  ['all','image','doc'].forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'det-filter-btn' + (filt === f ? ' active' : '');
+    btn.textContent = f === 'all' ? `전체 (${cachedFiles.length})` : f === 'image' ? `이미지 (${cachedFiles.filter(x=>x.fileType==='image').length})` : `문서 (${cachedFiles.filter(x=>x.fileType!=='image').length})`;
+    btn.addEventListener('click', () => { _detFileFilter = f; renderDetailModal(); });
+    bar.appendChild(btn);
+  });
+  container.appendChild(bar);
+
+  const filtered = filt === 'all' ? cachedFiles
+    : filt === 'image' ? cachedFiles.filter(f => f.fileType === 'image')
+    : cachedFiles.filter(f => f.fileType !== 'image');
+
+  if (!filtered.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;color:var(--text-muted);padding:60px 0;font-size:14px';
+    empty.textContent = '해당하는 파일이 없습니다';
+    container.appendChild(empty);
+    return;
+  }
+
+  const images = filtered.filter(f => f.fileType === 'image');
+  const docs   = filtered.filter(f => f.fileType !== 'image');
+
+  if (images.length) {
+    const grid = document.createElement('div');
+    grid.className = 'det-img-grid';
+    images.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'det-img-card';
+      card.innerHTML = `
+        <img src="${esc(f.fileUrl)}" alt="${esc(f.fileName)}" loading="lazy">
+        <div class="det-img-info">
+          <div class="det-img-nm">${esc(f.fileName)}</div>
+          <div class="det-img-sub">${esc(dName(f.userName))}</div>
+          <div class="det-img-room">${esc(f.roomName||'')}</div>
+        </div>`;
+      card.addEventListener('click', () => openLightbox(f.fileUrl));
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+  }
+
+  if (docs.length) {
+    docs.forEach(f => {
+      const row = document.createElement('a');
+      row.className = 'det-doc-row';
+      row.href = f.fileUrl;
+      row.target = '_blank';
+      row.innerHTML = `
+        <div style="font-size:26px;flex-shrink:0">${fileIcon(f.fileName)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.fileName)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(dName(f.userName))} · ${esc(f.roomName||'')} · ${esc(ts2time(f.timestamp))}</div>
+        </div>
+        <div class="det-doc-dl">다운로드 ↗</div>`;
+      container.appendChild(row);
+    });
+  }
+}
+
+// 전역 노출 (onclick 속성에서 호출)
+window.openDetailModal  = openDetailModal;
+window.setDetailFilter  = (f) => { _detFileFilter = f; renderDetailModal(); };
+
+// 모달 닫기 버튼
+document.getElementById('detail-modal-close').addEventListener('click', closeDetailModal);
+// 오버레이 배경 클릭 시 닫기
+document.getElementById('detail-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('detail-modal')) closeDetailModal();
+});
+// ESC 키로 닫기
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('detail-modal').hidden) closeDetailModal();
+});
 
 // 페이지 로드 즉시 Firebase 초기화 + USERS 로딩
 // (loadUsersFromFirebase 완료 후 세션 복원은 해당 함수 내부에서 처리)
