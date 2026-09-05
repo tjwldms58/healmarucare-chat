@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.2 | 2026-09-04 | 개인설정(알림·밝기·야간모드)·멤버 직책 관리 추가 -->
+<!-- v2.4 | 2026-09-04 | 유저 비활성화·검토패널토글·프로필사진·사용법·채팅공지 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -70,6 +70,29 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ============================================================ MAINTENANCE */
+    #maintenance-screen {
+      position: fixed; inset: 0; z-index: 2000;
+      background: #1A6B8F;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .maintenance-card {
+      background: var(--surface); border-radius: 20px;
+      padding: 50px 40px; width: 380px; text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .mc-icon { font-size: 52px; margin-bottom: 20px; }
+    .maintenance-card h2 { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+    .maintenance-card p  { font-size: 14px; color: var(--text-sec); line-height: 1.8; margin-bottom: 28px; }
+    .mc-spinner {
+      width: 36px; height: 36px; margin: 0 auto;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: mc-spin .8s linear infinite;
+    }
+    @keyframes mc-spin { to { transform: rotate(360deg); } }
 
     /* ============================================================ LOGIN */
     #login-screen {
@@ -582,6 +605,17 @@
     }
     .mb-nm { font-size: 13px; font-weight: 500; color: var(--text); }
 
+    /* Pin button on message hover */
+    .msg-group { position: relative; }
+    .pin-btn {
+      position: absolute; top: 4px; right: 4px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rx); padding: 2px 7px; font-size: 11px;
+      cursor: pointer; opacity: 0; transition: opacity .15s;
+      color: var(--text-sec); z-index: 2;
+    }
+    .msg-group:hover .pin-btn { opacity: 1; }
+
     /* Lightbox */
     #lightbox {
       position: fixed; inset: 0; background: rgba(0,0,0,.88);
@@ -592,6 +626,16 @@
   </style>
 </head>
 <body>
+
+<!-- ====== 시스템 점검 화면 ====== -->
+<div id="maintenance-screen" hidden>
+  <div class="maintenance-card">
+    <div class="mc-icon">🔧</div>
+    <h2>시스템 점검 중입니다</h2>
+    <p>더 나은 서비스를 위해 업데이트 작업 중입니다.<br>잠시만 기다려 주세요.</p>
+    <div class="mc-spinner"></div>
+  </div>
+</div>
 
 <!-- ====== 로그인 화면 ====== -->
 <div id="login-screen">
@@ -613,7 +657,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.0</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.4</p>
   </div>
 </div>
 
@@ -684,6 +728,18 @@
   <div class="modal" style="width:480px;max-width:95vw">
     <div class="modal-hdr">⚙️ 관리자 패널</div>
     <div class="modal-body">
+      <!-- 기능 설정 -->
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">기능 설정</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--sidebar);border-radius:var(--rs);margin-bottom:16px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">검토요청 패널</div>
+          <div style="font-size:12px;color:var(--text-muted)">채팅 탭의 검토현황 패널 표시</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="admin-review-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px">로그인 가능한 사용자 목록을 관리합니다.</p>
       <div style="background:var(--sidebar);border-radius:var(--rs);padding:12px;margin-bottom:16px;max-height:180px;overflow-y:auto" id="admin-user-list"></div>
       <div class="field" style="margin-bottom:20px">
@@ -706,11 +762,32 @@
   </div>
 </div>
 
+<!-- ====== 사용법 안내 모달 ====== -->
+<div class="overlay" id="help-modal" hidden>
+  <div class="modal" style="width:520px;max-width:95vw;max-height:80vh;overflow-y:auto">
+    <div class="modal-hdr">❓ 사용법 안내</div>
+    <div class="modal-body">
+      <div id="help-content-view" style="font-size:13px;color:var(--text);line-height:1.9;white-space:pre-wrap"></div>
+      <textarea id="help-content-edit" hidden style="width:100%;min-height:240px;font-size:13px;font-family:inherit;padding:10px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--sidebar);color:var(--text);resize:vertical;outline:none"></textarea>
+      <p id="help-save-msg" style="font-size:12px;color:var(--accent);margin-top:8px;display:none">저장되었습니다!</p>
+    </div>
+    <div class="modal-foot" id="help-modal-foot">
+      <button class="btn-primary" id="help-close-btn" style="width:auto;padding:10px 22px">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== 프로필 모달 ====== -->
 <div class="overlay" id="profile-modal" hidden>
   <div class="modal">
-    <div class="modal-hdr">✏️ 표시 이름 변경</div>
+    <div class="modal-hdr">✏️ 프로필 설정</div>
     <div class="modal-body">
+      <!-- 프로필 사진 -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div id="profile-photo-preview" style="width:80px;height:80px;border-radius:50%;margin:0 auto 10px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;cursor:pointer" onclick="document.getElementById('profile-photo-input').click()"></div>
+        <input type="file" id="profile-photo-input" accept="image/*" hidden>
+        <div style="font-size:12px;color:var(--text-muted)">클릭하여 사진 변경</div>
+      </div>
       <div class="field">
         <label>표시 이름 (채팅에서 보이는 이름)</label>
         <input type="text" id="display-name-input" placeholder="이름을 입력하세요" maxlength="20">
@@ -764,6 +841,7 @@
       <span class="h-uname" id="h-uname"></span>
       <button class="btn-edit-name" id="edit-name-btn" title="표시 이름 변경">✏️</button>
       <button class="btn-settings" id="settings-btn" title="개인 설정">🔧</button>
+      <button class="btn-admin" id="help-btn" title="사용법 안내">❓</button>
       <button class="btn-admin" id="admin-btn" hidden title="관리자 설정">⚙️</button>
       <button class="btn-logout" id="logout-btn">로그아웃</button>
     </div>
@@ -842,6 +920,15 @@
               <div id="chat-room-name"></div>
               <div class="m-chips" id="member-chips"></div>
             </div>
+          </div>
+          <div id="announcement-bar" hidden style="padding:8px 18px;background:linear-gradient(90deg,var(--primary-lt),var(--surface));border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;flex-shrink:0">
+            <span style="font-size:14px;flex-shrink:0">📢</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:2px">공지</div>
+              <div id="announcement-text" style="font-size:13px;color:var(--text);word-break:break-all;white-space:pre-wrap"></div>
+              <div id="announcement-meta" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
+            </div>
+            <button id="announcement-clear-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;flex-shrink:0" title="공지 해제">✕</button>
           </div>
           <div id="msgs">
             <div class="chat-empty">
@@ -971,6 +1058,11 @@ let lastSeenTs   = {};
 let userProfiles = {};
 let cachedMsgs   = [];
 let communityImgFile = null;  // 커뮤니티 첨부 이미지
+let disabledUsers    = {};    // 비활성화된 사용자
+let reviewEnabled    = true;  // 검토요청 패널 표시 여부
+let photoUrls        = {};    // 프로필 사진 URL
+let helpContent      = null;  // 사용법 안내 내용
+let announcementListener = null; // 공지 리스너
 
 // ──────────────────────────────────────────────────────
 // UTILS
@@ -1066,8 +1158,12 @@ function makeMemberCard(name, isMe) {
   const card = document.createElement('div');
   card.className = 'member-card';
   const dispN = dName(name);
+  const photoUrl = photoUrls[name];
+  const avContent = photoUrl
+    ? `<div class="member-av" style="background:${ucolor(name)};overflow:hidden"><img src="${esc(photoUrl)}" style="width:100%;height:100%;object-fit:cover"></div>`
+    : `<div class="member-av" style="background:${ucolor(name)}">${esc(dispN[0])}</div>`;
   card.innerHTML = `
-    <div class="member-av" style="background:${ucolor(name)}">${esc(dispN[0])}</div>
+    ${avContent}
     <div class="member-info">
       <div class="member-nm">${esc(dispN)}${name !== dispN ? ` <span style="font-size:12px;color:var(--text-muted)">(${esc(name)})</span>` : ''}</div>
       <div class="member-sub">${esc(getUserRole(name))}</div>
@@ -1133,7 +1229,10 @@ function logout() { try { localStorage.removeItem('hmc_u'); } catch(e) {} locati
 function checkSession() {
   try {
     const n = localStorage.getItem('hmc_u');
-    if (n && USERS.includes(n)) { user = { name: n }; return true; }
+    if (n && USERS.includes(n)) {
+      if (disabledUsers[n]) { try { localStorage.removeItem('hmc_u'); } catch(e) {} return false; }
+      user = { name: n }; return true;
+    }
   } catch(e) {}
   return false;
 }
@@ -1267,6 +1366,41 @@ function initFirebaseEarly() {
     storage = getStorage(app);
     auth    = getAuth(app);
     loadUsersFromFirebase(); // 로그인 전에 USERS 로딩
+
+    // 비활성화 사용자 실시간 감시
+    onValue(dbRef(db, 'config/disabledUsers'), snap => {
+      disabledUsers = snap.val() || {};
+      // 현재 로그인된 사용자가 비활성화되면 로그아웃
+      if (user && disabledUsers[user.name]) logout();
+    });
+
+    // 검토요청 패널 표시 여부 실시간 감시
+    onValue(dbRef(db, 'config/reviewEnabled'), snap => {
+      reviewEnabled = snap.val() !== false;
+      if (user) applyReviewVisibility();
+    });
+
+    // 점검 모드 실시간 감시 (config/maintenance = true 이면 점검 화면 표시)
+    onValue(dbRef(db, 'config/maintenance'), snap => {
+      const isMaint = snap.val() === true;
+      const maintEl  = document.getElementById('maintenance-screen');
+      const loginEl  = document.getElementById('login-screen');
+      const appEl    = document.getElementById('app');
+      if (isMaint) {
+        maintEl.hidden = false;
+        loginEl.hidden = true;
+        appEl.hidden   = true;
+      } else {
+        maintEl.hidden = true;
+        // 점검 해제 시 페이지 새로고침 → 정상 로그인 흐름으로
+        if (!maintEl.dataset.first) {
+          // 최초 로드(false)는 새로고침 없이 그냥 통과
+          maintEl.dataset.first = 'done';
+        } else {
+          location.reload();
+        }
+      }
+    });
   } catch(e) {
     console.error('Firebase early init error:', e);
   }
@@ -1284,6 +1418,7 @@ function initFirebase() {
     listenReviews();
     listenFiles();
     listenCommunity();
+    listenPhotoUrls();
   } catch(e) {
     document.getElementById('db-status').textContent = '연결 오류';
     console.error('Firebase init error:', e);
@@ -1402,6 +1537,7 @@ function selectRoom(id) {
   document.getElementById('input-area').hidden = false;
   document.getElementById('msgs').innerHTML = '<div class="center-msg"><span class="spinner"></span>메시지 불러오는 중...</div>';
   listenMessages(id);
+  listenAnnouncement(id);
   // 채팅 탭으로 이동
   switchTab('chat');
 }
@@ -1486,6 +1622,11 @@ function renderMessages(msgs) {
       bubbleContent = `<div class="bubble ${isMe?'me':'them'}${tagged?' tagged':''}">${tagHL(msg.text||'')}</div>`;
     }
 
+    const msgPhotoUrl = photoUrls[msg.userName];
+    const avHtml = msgPhotoUrl
+      ? `<div class="av" style="background:${color};overflow:hidden"><img src="${esc(msgPhotoUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
+      : `<div class="av" style="background:${color}">${esc(initial)}</div>`;
+
     if (isMe) {
       wrap.innerHTML = `
         <div class="msg-col">
@@ -1497,7 +1638,7 @@ function renderMessages(msgs) {
     } else {
       wrap.innerHTML = `
         <div class="av-wrap">
-          ${showSender ? `<div class="av" style="background:${color}">${esc(initial)}</div>` : '<div style="width:32px"></div>'}
+          ${showSender ? avHtml : '<div style="width:32px"></div>'}
         </div>
         <div class="msg-col">
           ${showSender ? `<div class="msg-sender" style="color:${color}">${esc(dispN)}</div>` : ''}
@@ -1508,6 +1649,22 @@ function renderMessages(msgs) {
         </div>`;
     }
     container.appendChild(wrap);
+
+    // Add pin button
+    const pinBtn = document.createElement('button');
+    pinBtn.className = 'pin-btn';
+    pinBtn.textContent = '📌 공지';
+    pinBtn.title = '공지로 설정';
+    pinBtn.addEventListener('click', async () => {
+      if (!curRoomId) return;
+      await set(dbRef(db, `rooms/${curRoomId}/announcement`), {
+        text: msg.text || msg.fileName || '',
+        author: msg.userName,
+        time: msg.timestamp
+      });
+    });
+    wrap.appendChild(pinBtn);
+
     prev = msg;
   });
   if (atBottom || !prev) container.scrollTop = container.scrollHeight;
@@ -1841,6 +1998,10 @@ document.getElementById('login-form').addEventListener('submit', e => {
     err.textContent='등록되지 않은 이름입니다.'; err.hidden=false;
     document.getElementById('uname-input').focus(); return;
   }
+  if (disabledUsers[name]) {
+    err.textContent='비활성화된 계정입니다. 관리자에게 문의하세요.'; err.hidden=false;
+    document.getElementById('uname-input').focus(); return;
+  }
   if (!pw) { err.textContent='비밀번호를 입력해주세요.'; err.hidden=false; return; }
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.textContent = '로그인 중...';
@@ -1859,6 +2020,18 @@ document.getElementById('edit-name-btn').addEventListener('click', () => {
   const input = document.getElementById('display-name-input');
   input.value = dName(user.name);
   document.getElementById('profile-err').hidden = true;
+  // 프로필 사진 미리보기 초기화
+  const preview = document.getElementById('profile-photo-preview');
+  if (preview) {
+    const url = photoUrls[user.name];
+    if (url) {
+      preview.style.background = ucolor(user.name);
+      preview.innerHTML = `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover">`;
+    } else {
+      preview.style.background = ucolor(user.name);
+      preview.textContent = (dName(user.name)||'?')[0];
+    }
+  }
   document.getElementById('profile-modal').hidden = false;
   setTimeout(() => { input.focus(); input.select(); }, 50);
 });
@@ -1918,12 +2091,45 @@ document.getElementById('modal').addEventListener('click', e => {
 // ──────────────────────────────────────────────────────
 function renderAdminUserList() {
   const el = document.getElementById('admin-user-list');
-  el.innerHTML = USERS.map(u =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px solid var(--border-lt)">
-      <span style="font-size:14px">${esc(u)}</span>
-      ${u === ADMIN_USER ? '<span style="font-size:11px;color:var(--text-muted)">관리자</span>' : ''}
-    </div>`
-  ).join('');
+  el.innerHTML = USERS.map(u => {
+    const isDisabled = !!disabledUsers[u];
+    const isAdmin = u === ADMIN_USER;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px solid var(--border-lt)">
+      <span style="font-size:14px;${isDisabled?'color:var(--text-muted);text-decoration:line-through':''}">${esc(u)}</span>
+      ${isAdmin
+        ? '<span style="font-size:11px;color:var(--text-muted)">관리자</span>'
+        : `<label class="toggle-wrap" title="${isDisabled?'활성화':'비활성화'}">
+            <input type="checkbox" data-username="${esc(u)}" class="user-disable-toggle" ${isDisabled?'':'checked'}>
+            <span class="toggle-slider"></span>
+          </label>`
+      }
+    </div>`;
+  }).join('');
+
+  // Attach event listeners
+  el.querySelectorAll('.user-disable-toggle').forEach(cb => {
+    cb.addEventListener('change', async (e) => {
+      const name = e.target.dataset.username;
+      e.target.disabled = true;
+      try {
+        if (e.target.checked) {
+          // re-enable: remove from disabledUsers
+          const updates = {};
+          updates[`config/disabledUsers/${name}`] = null;
+          await update(dbRef(db), updates);
+        } else {
+          // disable: set in disabledUsers
+          await set(dbRef(db, `config/disabledUsers/${name}`), true);
+        }
+        renderAdminUserList();
+      } catch(err) {
+        console.error('Toggle error:', err);
+        e.target.checked = !e.target.checked;
+      } finally {
+        e.target.disabled = false;
+      }
+    });
+  });
 }
 
 document.getElementById('admin-btn').addEventListener('click', () => {
@@ -1941,6 +2147,8 @@ document.getElementById('admin-pwd-confirm-btn').addEventListener('click', () =>
   document.getElementById('admin-pwd-modal').hidden = true;
   renderAdminUserList();
   renderRoleList();
+  const reviewToggle = document.getElementById('admin-review-toggle');
+  if (reviewToggle) reviewToggle.checked = reviewEnabled;
   document.getElementById('admin-panel-modal').hidden = false;
 });
 document.getElementById('admin-pwd-input').addEventListener('keydown', e => {
@@ -1963,6 +2171,230 @@ document.getElementById('admin-add-user-btn').addEventListener('click', async ()
 });
 
 // ──────────────────────────────────────────────────────
+// REVIEW VISIBILITY
+// ──────────────────────────────────────────────────────
+function applyReviewVisibility() {
+  const leftEl = document.getElementById('left');
+  if (!leftEl) return;
+  if (!reviewEnabled) { leftEl.hidden = true; return; }
+  leftEl.hidden = !REVIEW_USERS.includes(user?.name || '');
+}
+
+// ──────────────────────────────────────────────────────
+// PROFILE PHOTOS
+// ──────────────────────────────────────────────────────
+function listenPhotoUrls() {
+  onValue(dbRef(db, 'profiles'), snap => {
+    const data = snap.val() || {};
+    photoUrls = {};
+    Object.entries(data).forEach(([name, v]) => {
+      if (v && v.photoUrl) photoUrls[name] = v.photoUrl;
+    });
+    applyAllAvatars();
+  });
+}
+
+function applyAllAvatars() {
+  // Header avatar
+  const avEl = document.getElementById('h-av');
+  if (avEl) {
+    const url = photoUrls[user?.name];
+    if (url) {
+      avEl.innerHTML = `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      avEl.textContent = '';
+    } else {
+      avEl.innerHTML = '';
+      avEl.textContent = (dName(user?.name||'')||'?')[0];
+      avEl.style.background = ucolor(user?.name||'');
+    }
+  }
+  // Member list
+  renderMemberList();
+  // Re-render chat messages if open
+  if (cachedMsgs.length) renderMessages(cachedMsgs);
+}
+
+async function uploadProfilePhoto(file) {
+  if (!storage || !file) return null;
+  // compress to canvas 200x200
+  const bmp = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = 200; canvas.height = 200;
+  const ctx = canvas.getContext('2d');
+  const size = Math.min(bmp.width, bmp.height);
+  const ox = (bmp.width - size) / 2, oy = (bmp.height - size) / 2;
+  ctx.drawImage(bmp, ox, oy, size, size, 0, 0, 200, 200);
+  return new Promise(resolve => canvas.toBlob(async blob => {
+    try {
+      const sRef = storageRef(storage, `profiles/${user.name}/photo`);
+      await uploadBytes(sRef, blob, { contentType: 'image/jpeg' });
+      const url = await getDownloadURL(sRef);
+      await set(dbRef(db, `profiles/${user.name}/photoUrl`), url);
+      photoUrls[user.name] = url;
+      applyAllAvatars();
+      resolve(url);
+    } catch(e) { console.error('Photo upload error:', e); resolve(null); }
+  }, 'image/jpeg', 0.85));
+}
+
+// Profile photo input listener
+document.getElementById('profile-photo-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  const preview = document.getElementById('profile-photo-preview');
+  if (preview) {
+    preview.innerHTML = '<span style="font-size:12px">업로드 중...</span>';
+  }
+  const url = await uploadProfilePhoto(file);
+  if (url && preview) {
+    preview.style.background = ucolor(user.name);
+    preview.innerHTML = `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover">`;
+  } else if (preview) {
+    preview.innerHTML = '';
+    preview.textContent = (dName(user.name)||'?')[0];
+  }
+});
+
+// ──────────────────────────────────────────────────────
+// HELP GUIDE
+// ──────────────────────────────────────────────────────
+const DEFAULT_HELP = `📌 힐마루케어 대화의 장 사용법
+
+💬 채팅
+• 채팅 탭에서 채팅방을 선택하여 대화하세요.
+• + 버튼으로 새 채팅방을 만들 수 있어요.
+• 파일 아이콘(📎)으로 이미지/파일을 첨부할 수 있어요.
+
+🔍 검토요청
+• 메시지에 @부대표님 을 입력하면 검토 요청이 됩니다.
+• 해당 메시지는 왼쪽 '검토현황' 패널에 자동으로 표시돼요.
+• 검토 완료 후 체크하면 '검토완료'로 이동합니다.
+
+📢 공지
+• 채팅 메시지 위에 마우스를 올리면 📌 버튼이 나타납니다.
+• 📌 버튼을 클릭하면 해당 메시지가 채팅방 상단에 공지로 고정됩니다.
+• 공지를 해제하려면 공지 영역의 ✕ 버튼을 클릭하세요.
+
+👤 멤버 목록
+• 하단 '목록' 탭에서 전체 멤버를 확인할 수 있어요.
+
+⚙️ 개인 설정
+• 헤더의 🔧 버튼으로 알림, 야간모드, 화면 밝기를 설정하세요.
+• ✏️ 버튼으로 표시 이름과 프로필 사진을 변경할 수 있어요.
+
+🏢 커뮤니티
+• '커뮤니티' 탭에서 전체 공지/소식을 공유하세요.`;
+
+async function loadHelp() {
+  try {
+    const snap = await get(dbRef(db, 'config/helpContent'));
+    if (snap.exists()) helpContent = snap.val();
+  } catch(e) {}
+}
+
+function openHelp() {
+  const modal = document.getElementById('help-modal');
+  const view  = document.getElementById('help-content-view');
+  const edit  = document.getElementById('help-content-edit');
+  const foot  = document.getElementById('help-modal-foot');
+  const saveMsg = document.getElementById('help-save-msg');
+
+  view.textContent = helpContent || DEFAULT_HELP;
+  view.hidden = false;
+  edit.hidden = true;
+  saveMsg.style.display = 'none';
+
+  // 기본 footer
+  foot.innerHTML = '';
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn-primary';
+  closeBtn.style.cssText = 'width:auto;padding:10px 22px';
+  closeBtn.textContent = '닫기';
+  closeBtn.id = 'help-close-btn';
+  closeBtn.addEventListener('click', () => { modal.hidden = true; });
+  foot.appendChild(closeBtn);
+
+  // 관리자만 편집 버튼 표시
+  if (user && user.name === ADMIN_USER) {
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-sec';
+    editBtn.textContent = '편집';
+    editBtn.addEventListener('click', () => {
+      view.hidden = true;
+      edit.hidden = false;
+      edit.value = helpContent || DEFAULT_HELP;
+
+      foot.innerHTML = '';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn-primary';
+      saveBtn.style.cssText = 'width:auto;padding:10px 22px';
+      saveBtn.textContent = '저장';
+      saveBtn.addEventListener('click', async () => {
+        const newContent = edit.value;
+        try {
+          await set(dbRef(db, 'config/helpContent'), newContent);
+          helpContent = newContent;
+          view.textContent = newContent;
+          view.hidden = false;
+          edit.hidden = true;
+          saveMsg.style.display = 'block';
+          setTimeout(() => { saveMsg.style.display = 'none'; }, 2000);
+        } catch(e) { alert('저장 실패: ' + e.message); }
+        openHelp();
+      });
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn-sec';
+      cancelBtn.textContent = '취소';
+      cancelBtn.addEventListener('click', () => openHelp());
+      foot.appendChild(cancelBtn);
+      foot.appendChild(saveBtn);
+    });
+    foot.insertBefore(editBtn, closeBtn);
+  }
+
+  modal.hidden = false;
+}
+
+document.getElementById('help-btn').addEventListener('click', openHelp);
+
+// ──────────────────────────────────────────────────────
+// ANNOUNCEMENT
+// ──────────────────────────────────────────────────────
+function listenAnnouncement(roomId) {
+  if (announcementListener) { announcementListener(); announcementListener = null; }
+  announcementListener = onValue(dbRef(db, `rooms/${roomId}/announcement`), snap => {
+    const bar = document.getElementById('announcement-bar');
+    const data = snap.val();
+    if (data && data.text) {
+      document.getElementById('announcement-text').textContent = data.text;
+      document.getElementById('announcement-meta').textContent = `${dName(data.author)} · ${new Date(data.time).toLocaleString('ko')}`;
+      bar.hidden = false;
+      // Show clear btn only if admin or author
+      document.getElementById('announcement-clear-btn').style.display =
+        (user.name === ADMIN_USER || user.name === data.author) ? '' : 'none';
+    } else {
+      bar.hidden = true;
+    }
+  });
+}
+
+document.getElementById('announcement-clear-btn').addEventListener('click', async () => {
+  if (!curRoomId) return;
+  await set(dbRef(db, `rooms/${curRoomId}/announcement`), null);
+});
+
+// admin-review-toggle 이벤트
+document.getElementById('admin-review-toggle').addEventListener('change', async (e) => {
+  try {
+    await set(dbRef(db, 'config/reviewEnabled'), e.target.checked);
+  } catch(err) {
+    console.error('Review toggle error:', err);
+    e.target.checked = !e.target.checked;
+  }
+});
+
+// ──────────────────────────────────────────────────────
 // START
 // ──────────────────────────────────────────────────────
 // 전역 라이트박스 (img onclick에서 호출)
@@ -1976,17 +2408,17 @@ async function startApp() {
   document.getElementById('h-uname').textContent = user.name;
   if (user.name === ADMIN_USER) document.getElementById('admin-btn').hidden = false;
 
-  // 검토현황 패널: REVIEW_USERS만 표시
-  if (!REVIEW_USERS.includes(user.name)) {
-    document.getElementById('left').hidden = true;
-  }
+  // 검토현황 패널: reviewEnabled + REVIEW_USERS 체크
+  applyReviewVisibility();
 
   loadProfiles();
   applyProfileUpdate();
+  applyAllAvatars();
   requestNotifPermission();
   initSettingsPanel();
   await signInToFirebase(); // Firebase 익명 인증 완료 후에 채팅 시작
   await loadRoles();
+  await loadHelp();
   renderMemberList();
   initFirebase();
 }
