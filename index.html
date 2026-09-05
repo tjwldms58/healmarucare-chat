@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.4 | 2026-09-04 | 유저 비활성화·검토패널토글·프로필사진·사용법·채팅공지 추가 -->
+<!-- v2.5 | 2026-09-05 | 관리자패널UI개선·@멘션수정·파일업로드수정·메세지수정삭제 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -616,6 +616,51 @@
     }
     .msg-group:hover .pin-btn { opacity: 1; }
 
+    /* Message action buttons (edit/delete) */
+    .msg-actions {
+      display: inline-flex; gap: 3px; align-items: center;
+      opacity: 0; transition: opacity .15s; flex-shrink: 0;
+    }
+    .msg-group:hover .msg-actions { opacity: 1; }
+    .msg-act-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rx); padding: 2px 6px; font-size: 11px;
+      cursor: pointer; color: var(--text-muted);
+      transition: color .1s, background .1s; white-space: nowrap;
+    }
+    .msg-act-btn:hover { background: var(--border-lt); color: var(--text); }
+    .msg-act-btn.del:hover { background: #FEE2E2; color: #DC2626; border-color: #FECACA; }
+    /* Inline edit area */
+    .msg-edit-wrap {
+      display: flex; flex-direction: column; gap: 6px; width: 100%;
+    }
+    .msg-edit-input {
+      width: 100%; padding: 7px 10px; font-size: 13px; font-family: inherit;
+      border: 1.5px solid var(--primary); border-radius: var(--rs);
+      background: var(--surface); color: var(--text); resize: none;
+      outline: none; line-height: 1.5;
+    }
+    .msg-edit-btns { display: flex; gap: 6px; justify-content: flex-end; }
+    .msg-edit-save {
+      padding: 4px 12px; font-size: 12px; border-radius: var(--rx);
+      background: var(--primary); color: #fff; border: none; cursor: pointer;
+    }
+    .msg-edit-cancel {
+      padding: 4px 12px; font-size: 12px; border-radius: var(--rx);
+      background: var(--border); color: var(--text-sec); border: none; cursor: pointer;
+    }
+    /* Admin user table */
+    .admin-user-row {
+      display: grid; grid-template-columns: 1fr auto auto;
+      align-items: center; gap: 10px;
+      padding: 8px 4px; border-bottom: 1px solid var(--border-lt);
+    }
+    .admin-user-row:last-child { border-bottom: none; }
+    .admin-col-hdr {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .5px; text-align: center; width: 52px;
+    }
+
     /* Lightbox */
     #lightbox {
       position: fixed; inset: 0; background: rgba(0,0,0,.88);
@@ -657,7 +702,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.4</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v2.5</p>
   </div>
 </div>
 
@@ -725,23 +770,22 @@
 
 <!-- ====== 관리자 패널 모달 ====== -->
 <div class="overlay" id="admin-panel-modal" hidden>
-  <div class="modal" style="width:480px;max-width:95vw">
+  <div class="modal" style="width:500px;max-width:95vw">
     <div class="modal-hdr">⚙️ 관리자 패널</div>
     <div class="modal-body">
-      <!-- 기능 설정 -->
-      <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">기능 설정</p>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--sidebar);border-radius:var(--rs);margin-bottom:16px">
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text)">검토요청 패널</div>
-          <div style="font-size:12px;color:var(--text-muted)">채팅 탭의 검토현황 패널 표시</div>
-        </div>
-        <label class="toggle-wrap">
-          <input type="checkbox" id="admin-review-toggle" checked>
-          <span class="toggle-slider"></span>
-        </label>
+      <!-- 계정 및 권한 관리 -->
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">계정 및 권한 관리</p>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+        · <b style="color:var(--text)">로그인</b> — 해당 사용자의 앱 로그인 허용 여부<br>
+        · <b style="color:var(--text)">검토패널</b> — 채팅의 @부대표님 검토현황 패널 접근 권한
       </div>
-      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px">로그인 가능한 사용자 목록을 관리합니다.</p>
-      <div style="background:var(--sidebar);border-radius:var(--rs);padding:12px;margin-bottom:16px;max-height:180px;overflow-y:auto" id="admin-user-list"></div>
+      <!-- 컬럼 헤더 -->
+      <div style="display:grid;grid-template-columns:1fr 52px 52px;gap:10px;padding:0 4px 6px;border-bottom:2px solid var(--border)">
+        <span style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.4px">이름</span>
+        <span class="admin-col-hdr">로그인</span>
+        <span class="admin-col-hdr">검토패널</span>
+      </div>
+      <div style="background:var(--sidebar);border-radius:var(--rs);padding:8px 12px;margin-top:8px;margin-bottom:16px;max-height:220px;overflow-y:auto" id="admin-user-list"></div>
       <div class="field" style="margin-bottom:20px">
         <label>새 사용자 추가</label>
         <div style="display:flex;gap:8px">
@@ -1034,7 +1078,7 @@ let   USERS        = ['민경필','차규은','이청용','서지은','허수빈
 const PASSWORD     = 'healmarucare!';
 const ADMIN_USER   = '서지은';
 const ADMIN_PWD    = 'rudckf@8899';
-const REVIEW_USERS = ['민경필','차규은','이청용','서지은','허수빈'];
+let   reviewUsers  = ['민경필','차규은','이청용','서지은','허수빈']; // 검토패널 접근 권한 (Firebase 동기화)
 const COLORS = {
   '민경필':'#E74C3C','차규은':'#9B59B6','이청용':'#27AE60',
   '서지은':'#E67E22','허수빈':'#2980B9','강수희':'#1ABC9C'
@@ -1059,7 +1103,6 @@ let userProfiles = {};
 let cachedMsgs   = [];
 let communityImgFile = null;  // 커뮤니티 첨부 이미지
 let disabledUsers    = {};    // 비활성화된 사용자
-let reviewEnabled    = true;  // 검토요청 패널 표시 여부
 let photoUrls        = {};    // 프로필 사진 URL
 let helpContent      = null;  // 사용법 안내 내용
 let announcementListener = null; // 공지 리스너
@@ -1374,9 +1417,13 @@ function initFirebaseEarly() {
       if (user && disabledUsers[user.name]) logout();
     });
 
-    // 검토요청 패널 표시 여부 실시간 감시
-    onValue(dbRef(db, 'config/reviewEnabled'), snap => {
-      reviewEnabled = snap.val() !== false;
+    // 검토패널 접근 권한 유저 목록 실시간 감시
+    onValue(dbRef(db, 'config/reviewUsers'), snap => {
+      const val = snap.val();
+      if (Array.isArray(val)) {
+        reviewUsers = val;
+      }
+      // 저장된 값 없으면 기본값 유지
       if (user) applyReviewVisibility();
     });
 
@@ -1618,8 +1665,20 @@ function renderMessages(msgs) {
         </div>
       </a>`;
     } else {
-      const tagged = !!msg.hasTag;
-      bubbleContent = `<div class="bubble ${isMe?'me':'them'}${tagged?' tagged':''}">${tagHL(msg.text||'')}</div>`;
+      // @부대표님 tag: check stored field OR actual text (backwards compat)
+      const tagged = !!(msg.hasTag || (msg.text && msg.text.includes('@부대표님')));
+      const canEdit = isMe && msg.type !== 'image' && msg.type !== 'file';
+      const canDel  = isMe || user.name === ADMIN_USER;
+      const actHtml = (canEdit || canDel) ? `<div class="msg-actions" data-msgid="${esc(msg.id)}">
+        ${canEdit ? `<button class="msg-act-btn edit-btn" data-msgid="${esc(msg.id)}" title="수정">✏️</button>` : ''}
+        ${canDel  ? `<button class="msg-act-btn del del-btn" data-msgid="${esc(msg.id)}" title="삭제">🗑️</button>` : ''}
+      </div>` : '';
+      bubbleContent = `<div class="bubble ${isMe?'me':'them'}${tagged?' tagged':''}" data-msgid="${esc(msg.id)}">${tagHL(msg.text||'')}</div>`;
+      if (isMe) {
+        bubbleContent = actHtml + bubbleContent;
+      } else {
+        bubbleContent = bubbleContent + actHtml;
+      }
     }
 
     const msgPhotoUrl = photoUrls[msg.userName];
@@ -1649,6 +1708,20 @@ function renderMessages(msgs) {
         </div>`;
     }
     container.appendChild(wrap);
+
+    // Edit button handler
+    wrap.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => startEditMsg(msg, wrap));
+    });
+    // Delete button handler
+    wrap.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`"${(msg.text||'').slice(0,30)}..." 메세지를 삭제할까요?`)) return;
+        try {
+          await set(dbRef(db, `messages/${curRoomId}/${msg.id}`), null);
+        } catch(err) { alert('삭제 실패: ' + err.message); }
+      });
+    });
 
     // Add pin button
     const pinBtn = document.createElement('button');
@@ -1699,11 +1772,54 @@ async function sendMessage() {
 }
 
 // ──────────────────────────────────────────────────────
+// MESSAGE EDIT
+// ──────────────────────────────────────────────────────
+function startEditMsg(msg, wrap) {
+  // Find the bubble element to replace with edit UI
+  const bubbleEl = wrap.querySelector(`.bubble[data-msgid="${msg.id}"]`);
+  if (!bubbleEl) return;
+  const msgRow = bubbleEl.closest('.msg-row');
+  if (!msgRow) return;
+
+  const origText = msg.text || '';
+  const editWrap = document.createElement('div');
+  editWrap.className = 'msg-edit-wrap';
+  editWrap.innerHTML = `
+    <textarea class="msg-edit-input" rows="2">${esc(origText)}</textarea>
+    <div class="msg-edit-btns">
+      <button class="msg-edit-cancel">취소</button>
+      <button class="msg-edit-save">저장</button>
+    </div>`;
+
+  // Replace bubble with edit UI
+  bubbleEl.replaceWith(editWrap);
+  const ta = editWrap.querySelector('.msg-edit-input');
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = ta.value.length;
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+
+  editWrap.querySelector('.msg-edit-cancel').addEventListener('click', () => {
+    editWrap.replaceWith(bubbleEl);
+  });
+  editWrap.querySelector('.msg-edit-save').addEventListener('click', async () => {
+    const newText = ta.value.trim();
+    if (!newText || newText === origText) { editWrap.replaceWith(bubbleEl); return; }
+    try {
+      const hasTag = newText.includes('@부대표님');
+      await update(dbRef(db, `messages/${curRoomId}/${msg.id}`), { text: newText, hasTag, edited: true });
+    } catch(err) { alert('수정 실패: ' + err.message); }
+  });
+}
+
+// ──────────────────────────────────────────────────────
 // FILE UPLOAD
 // ──────────────────────────────────────────────────────
 document.getElementById('file-input').addEventListener('change', async (e) => {
   const file = e.target.files[0];
-  if (!file || !curRoomId || !storage) return;
+  if (!file || !curRoomId || !storage || !db) return;
   e.target.value = '';
 
   const maxSize = 20 * 1024 * 1024; // 20MB
@@ -1741,10 +1857,11 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
       userName: user.name, timestamp
     });
     document.getElementById('msgs').scrollTop = 9999999;
+    progressEl.textContent = `✅ "${file.name}" 업로드 완료!`;
+    setTimeout(() => { progressEl.hidden = true; }, 2000);
   } catch(err) {
-    alert('파일 업로드 실패: ' + err.message);
-  } finally {
-    progressEl.hidden = true;
+    progressEl.textContent = `❌ 업로드 실패: ${err.message}`;
+    setTimeout(() => { progressEl.hidden = true; }, 3000);
   }
 });
 
@@ -1810,8 +1927,9 @@ function listenReviews() {
 }
 
 function renderReviews(all) {
-  const pend = all.filter(r => !r.checked);
-  const done = all.filter(r =>  r.checked);
+  // 최신순 정렬 (내림차순)
+  const pend = all.filter(r => !r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+  const done = all.filter(r =>  r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
   const pb = document.getElementById('pend-badge');
   pb.textContent = pend.length; pb.className = 'badge' + (pend.length ? '' : ' empty');
   const db2 = document.getElementById('done-badge');
@@ -2092,42 +2210,70 @@ document.getElementById('modal').addEventListener('click', e => {
 function renderAdminUserList() {
   const el = document.getElementById('admin-user-list');
   el.innerHTML = USERS.map(u => {
-    const isDisabled = !!disabledUsers[u];
-    const isAdmin = u === ADMIN_USER;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px solid var(--border-lt)">
-      <span style="font-size:14px;${isDisabled?'color:var(--text-muted);text-decoration:line-through':''}">${esc(u)}</span>
-      ${isAdmin
-        ? '<span style="font-size:11px;color:var(--text-muted)">관리자</span>'
-        : `<label class="toggle-wrap" title="${isDisabled?'활성화':'비활성화'}">
-            <input type="checkbox" data-username="${esc(u)}" class="user-disable-toggle" ${isDisabled?'':'checked'}>
-            <span class="toggle-slider"></span>
-          </label>`
-      }
+    const isDisabled  = !!disabledUsers[u];
+    const isAdmin     = u === ADMIN_USER;
+    const hasReview   = reviewUsers.includes(u);
+    const nameStyle   = isDisabled ? 'color:var(--text-muted);text-decoration:line-through' : '';
+    if (isAdmin) {
+      return `<div class="admin-user-row">
+        <span style="font-size:13px;font-weight:600">${esc(u)}</span>
+        <span style="font-size:11px;color:var(--text-muted);text-align:center">관리자</span>
+        <span style="font-size:11px;color:var(--text-muted);text-align:center">—</span>
+      </div>`;
+    }
+    return `<div class="admin-user-row">
+      <span style="font-size:13px;${nameStyle}">${esc(u)}</span>
+      <div style="display:flex;justify-content:center">
+        <label class="toggle-wrap" title="${isDisabled?'로그인 활성화':'로그인 비활성화'}">
+          <input type="checkbox" data-username="${esc(u)}" class="user-login-toggle" ${isDisabled?'':'checked'}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div style="display:flex;justify-content:center">
+        <label class="toggle-wrap" title="${hasReview?'검토패널 접근 제거':'검토패널 접근 허용'}">
+          <input type="checkbox" data-username="${esc(u)}" class="user-review-toggle" ${hasReview?'checked':''}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
     </div>`;
   }).join('');
 
-  // Attach event listeners
-  el.querySelectorAll('.user-disable-toggle').forEach(cb => {
+  // Login toggle
+  el.querySelectorAll('.user-login-toggle').forEach(cb => {
     cb.addEventListener('change', async (e) => {
       const name = e.target.dataset.username;
       e.target.disabled = true;
       try {
         if (e.target.checked) {
-          // re-enable: remove from disabledUsers
-          const updates = {};
-          updates[`config/disabledUsers/${name}`] = null;
+          const updates = {}; updates[`config/disabledUsers/${name}`] = null;
           await update(dbRef(db), updates);
         } else {
-          // disable: set in disabledUsers
           await set(dbRef(db, `config/disabledUsers/${name}`), true);
         }
         renderAdminUserList();
       } catch(err) {
-        console.error('Toggle error:', err);
+        console.error('Login toggle error:', err);
         e.target.checked = !e.target.checked;
-      } finally {
-        e.target.disabled = false;
-      }
+      } finally { e.target.disabled = false; }
+    });
+  });
+
+  // Review panel toggle
+  el.querySelectorAll('.user-review-toggle').forEach(cb => {
+    cb.addEventListener('change', async (e) => {
+      const name = e.target.dataset.username;
+      e.target.disabled = true;
+      try {
+        const newList = e.target.checked
+          ? [...new Set([...reviewUsers, name])]
+          : reviewUsers.filter(u => u !== name);
+        await set(dbRef(db, 'config/reviewUsers'), newList);
+        // reviewUsers will update via listener
+        renderAdminUserList();
+      } catch(err) {
+        console.error('Review toggle error:', err);
+        e.target.checked = !e.target.checked;
+      } finally { e.target.disabled = false; }
     });
   });
 }
@@ -2147,8 +2293,6 @@ document.getElementById('admin-pwd-confirm-btn').addEventListener('click', () =>
   document.getElementById('admin-pwd-modal').hidden = true;
   renderAdminUserList();
   renderRoleList();
-  const reviewToggle = document.getElementById('admin-review-toggle');
-  if (reviewToggle) reviewToggle.checked = reviewEnabled;
   document.getElementById('admin-panel-modal').hidden = false;
 });
 document.getElementById('admin-pwd-input').addEventListener('keydown', e => {
@@ -2176,8 +2320,7 @@ document.getElementById('admin-add-user-btn').addEventListener('click', async ()
 function applyReviewVisibility() {
   const leftEl = document.getElementById('left');
   if (!leftEl) return;
-  if (!reviewEnabled) { leftEl.hidden = true; return; }
-  leftEl.hidden = !REVIEW_USERS.includes(user?.name || '');
+  leftEl.hidden = !reviewUsers.includes(user?.name || '');
 }
 
 // ──────────────────────────────────────────────────────
@@ -2384,16 +2527,6 @@ document.getElementById('announcement-clear-btn').addEventListener('click', asyn
   await set(dbRef(db, `rooms/${curRoomId}/announcement`), null);
 });
 
-// admin-review-toggle 이벤트
-document.getElementById('admin-review-toggle').addEventListener('change', async (e) => {
-  try {
-    await set(dbRef(db, 'config/reviewEnabled'), e.target.checked);
-  } catch(err) {
-    console.error('Review toggle error:', err);
-    e.target.checked = !e.target.checked;
-  }
-});
-
 // ──────────────────────────────────────────────────────
 // START
 // ──────────────────────────────────────────────────────
@@ -2408,7 +2541,7 @@ async function startApp() {
   document.getElementById('h-uname').textContent = user.name;
   if (user.name === ADMIN_USER) document.getElementById('admin-btn').hidden = false;
 
-  // 검토현황 패널: reviewEnabled + REVIEW_USERS 체크
+  // 검토현황 패널: reviewUsers 체크
   applyReviewVisibility();
 
   loadProfiles();
