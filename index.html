@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.18 | 2026-09-05 | 점검 화면 이모티콘 제거 -->
+<!-- v3.19 | 2026-09-05 | 채팅 메시지 덮어쓰기 버그 수정 (orderByChild 제거) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -853,7 +853,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.18</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.19</p>
   </div>
 </div>
 
@@ -2097,7 +2097,7 @@ async function createRoom(name, members) {
 function listenMessages(roomId) {
   if (listeners.msgs) listeners.msgs();
   listeners.msgs = null;
-  const msgsQuery = query(dbRef(db, `messages/${roomId}`), orderByChild('timestamp'), limitToLast(200));
+  const msgsQuery = query(dbRef(db, `messages/${roomId}`), limitToLast(200));
   let firstLoad = true;
   listeners.msgs = onValue(msgsQuery, snap => {
     const msgs = [];
