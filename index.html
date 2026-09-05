@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.15 | 2026-09-05 | 패널 다중 데이터 표시 수정 (orderByChild 제거 → 클라이언트 정렬) -->
+<!-- v3.16 | 2026-09-05 | 검토현황 휴지통 제거 (검토완료에만 표시) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -854,7 +854,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.15</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.16</p>
   </div>
 </div>
 
@@ -2559,7 +2559,7 @@ function makeRevItem(r, isDone) {
       alert('업데이트 실패: ' + err.message);
     } finally { e.target.disabled = false; }
   });
-  if (canDelete(r)) el.appendChild(makeDelBtn(`reviews/${r.id}`));
+  if (isDone && canDelete(r)) el.appendChild(makeDelBtn(`reviews/${r.id}`));
   return el;
 }
 
@@ -2685,7 +2685,7 @@ function makeTeamRevItem(r, isDone) {
 
   el.appendChild(cbWrap);
   el.appendChild(body);
-  if (canDelete(r)) el.appendChild(makeDelBtn(`teamReviews/${r.id}`));
+  if (isDone && canDelete(r)) el.appendChild(makeDelBtn(`teamReviews/${r.id}`));
   return el;
 }
 
@@ -2741,7 +2741,7 @@ function makeWorkItem(r, isDone) {
       alert('업데이트 실패: ' + err.message);
     } finally { e.target.disabled = false; }
   });
-  if (canDelete(r)) el.appendChild(makeDelBtn(`workRequests/${r.id}`));
+  if (isDone && canDelete(r)) el.appendChild(makeDelBtn(`workRequests/${r.id}`));
   return el;
 }
 
@@ -3685,7 +3685,7 @@ function makeDetailRevItem(r, isDone, type) {
 
   el.appendChild(leftCol);
   el.appendChild(bodyDiv);
-  if (canDelete(r)) el.appendChild(makeDelBtn(fbPath));
+  if (isDone && canDelete(r)) el.appendChild(makeDelBtn(fbPath));
 
   return el;
 }
