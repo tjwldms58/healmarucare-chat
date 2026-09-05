@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.11 | 2026-09-05 | 관리자 권한 양도 기능 추가 -->
+<!-- v3.13 | 2026-09-05 | 삭제 기능 추가 + 팀원요청 전원 체크 시 검토완료 이동 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -366,6 +366,26 @@
     .rev-text { font-size: 13px; color: var(--text); line-height: 1.45; word-break: break-word; margin-bottom: 4px; }
     .rev-time { font-size: 11px; color: var(--text-muted); }
     .rev-item.done .rev-text, .rev-item.done .rev-meta { text-decoration: line-through; color: var(--text-muted); }
+    /* 삭제 버튼 */
+    .del-btn {
+      flex-shrink: 0; background: none; border: none; padding: 2px 4px;
+      font-size: 14px; cursor: pointer; opacity: 0.25; color: var(--text-muted);
+      border-radius: 4px; transition: opacity .15s, color .15s; line-height: 1;
+      align-self: flex-start; margin-top: 1px;
+    }
+    .del-btn:hover { opacity: 1; color: #e55; }
+    /* 팀원 승인 칩 */
+    .team-approvals { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .appr-chip {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; padding: 2px 7px; border-radius: 10px;
+      border: 1px solid var(--border); color: var(--text-muted);
+      background: transparent; cursor: default; transition: all .15s;
+      white-space: nowrap; font-weight: 500;
+    }
+    .appr-chip.approved { border-color: #4CAF50; color: #4CAF50; background: rgba(76,175,80,.08); }
+    .appr-chip.mine { cursor: pointer; }
+    .appr-chip.mine:not(.approved):hover { border-color: var(--primary); color: var(--primary); background: var(--primary-lt); }
 
     /* ── 섹션 헤더 클릭 ── */
     .sec-lbl-btn {
@@ -834,7 +854,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.10</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.13</p>
   </div>
 </div>
 
@@ -892,13 +912,6 @@
     </div>
   </div>
 
-  <hr class="sp-divider">
-
-  <!-- 연결 상태 -->
-  <div>
-    <div id="db-status" class="sp-status">○ 연결 중...</div>
-    <div id="auth-status" class="sp-status" style="margin-top:3px">○ 인증 중...</div>
-  </div>
 </div>
 
 <!-- ====== 관리자 비밀번호 모달 ====== -->
@@ -954,6 +967,11 @@
       <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">멤버 직책 관리</p>
       <div style="background:var(--sidebar);border-radius:var(--rs);padding:12px;max-height:200px;overflow-y:auto" id="admin-role-list"></div>
       <p id="admin-role-msg" style="font-size:12px;color:var(--accent);margin-top:8px;display:none">저장되었습니다!</p>
+
+      <!-- 연결·인증 상태 (관리자만 확인) -->
+      <hr style="border:none;border-top:1px solid var(--border-lt);margin:20px 0 16px">
+      <div id="db-status" class="sp-status">○ 연결 중...</div>
+      <div id="auth-status" class="sp-status" style="margin-top:3px">○ 인증 중...</div>
 
       <!-- 관리자 권한 양도 -->
       <hr style="border:none;border-top:1px solid var(--border-lt);margin:20px 0 16px">
@@ -1307,7 +1325,7 @@
 ======================================================== -->
 <script type="module">
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getDatabase, ref as dbRef, onValue, off, push, set, update, get, query,
+import { getDatabase, ref as dbRef, onValue, off, push, set, update, get, remove, query,
          orderByChild, limitToLast }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
@@ -1665,6 +1683,40 @@ async function loadRoles() {
 }
 
 // ──────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────
+// DELETE & TEAM APPROVAL HELPERS
+// ──────────────────────────────────────────────────────
+const TEAM_APPROVERS = ['차규은', '이청용', '서지은']; // 팀원요청 전원 체크 대상
+
+function canDelete(r) {
+  // 본인이 올린 글 OR 관리자(서지은)
+  return r.userName === user.name || user.name === ADMIN_USER;
+}
+
+function isTeamAllApproved(r) {
+  if (!r.approvals) return !!r.checked; // 구버전 호환
+  return TEAM_APPROVERS.every(u => r.approvals[u] === true);
+}
+
+function makeDelBtn(path) {
+  const btn = document.createElement('button');
+  btn.className = 'del-btn';
+  btn.title = '삭제';
+  btn.textContent = '🗑️';
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+    btn.disabled = true;
+    try {
+      await remove(dbRef(db, path));
+    } catch(err) {
+      alert('삭제 실패: ' + err.message);
+      btn.disabled = false;
+    }
+  });
+  return btn;
+}
+
 // ADMIN TRANSFER (관리자 권한 양도)
 // ──────────────────────────────────────────────────────
 async function loadAdminUser() {
@@ -2496,6 +2548,7 @@ function makeRevItem(r, isDone) {
       alert('업데이트 실패: ' + err.message);
     } finally { e.target.disabled = false; }
   });
+  if (canDelete(r)) el.appendChild(makeDelBtn(`reviews/${r.id}`));
   return el;
 }
 
@@ -2532,8 +2585,8 @@ function listenTeamReviews() {
 function renderTeamReviews(all) {
   cachedTeamReviews = all;
   if (detailModalType === 'team-pend' || detailModalType === 'team-done') renderDetailModal();
-  const pend = all.filter(r => !r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
-  const done = all.filter(r =>  r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+  const pend = all.filter(r => !isTeamAllApproved(r)).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+  const done = all.filter(r =>  isTeamAllApproved(r)).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
 
   const tabBadge = document.getElementById('left-tab-team-badge');
   if (tabBadge) { tabBadge.textContent = pend.length; }
@@ -2561,25 +2614,67 @@ function makeTeamRevItem(r, isDone) {
   const el = document.createElement('div');
   el.className = 'rev-item' + (isDone ? ' done' : '');
   const color = ucolor(r.userName);
-  el.innerHTML = `
-    <div class="rev-cb-wrap"><input type="checkbox" class="rev-cb" ${isDone?'checked':''}></div>
-    <div class="rev-body">
-      <div class="rev-meta">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:${color};color:#fff;font-size:9px;font-weight:700;margin-right:3px;">${esc((dName(r.userName)||'?')[0])}</span>
-        ${esc(dName(r.userName))} · <span style="color:#9B59B6">${esc(r.roomName||'')}</span>
-      </div>
-      <div class="rev-text">${tagHL(r.text||'')}</div>
-      <div class="rev-time">${esc(ts2time(r.timestamp))}</div>
-    </div>`;
-  el.querySelector('.rev-cb').addEventListener('change', async (e) => {
-    e.target.disabled = true;
-    try {
-      await update(dbRef(db, `teamReviews/${r.id}`), { checked: !isDone, checkedAt: !isDone ? Date.now() : null });
-    } catch(err) {
-      e.target.checked = isDone;
-      alert('업데이트 실패: ' + err.message);
-    } finally { e.target.disabled = false; }
+
+  const cbWrap = document.createElement('div');
+  cbWrap.className = 'rev-cb-wrap';
+  // 전체 완료 여부 시각적 표시 (작은 체크 아이콘)
+  const allDone = isTeamAllApproved(r);
+  cbWrap.innerHTML = `<span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:4px;border:2px solid ${allDone?'#4CAF50':'var(--border)'};background:${allDone?'#4CAF50':'transparent'};font-size:10px;color:#fff;font-weight:700">${allDone?'✓':''}</span>`;
+
+  const body = document.createElement('div');
+  body.className = 'rev-body';
+
+  const meta = document.createElement('div');
+  meta.className = 'rev-meta';
+  meta.innerHTML = `<span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:${color};color:#fff;font-size:9px;font-weight:700;margin-right:3px;">${esc((dName(r.userName)||'?')[0])}</span>${esc(dName(r.userName))} · <span style="color:#9B59B6">${esc(r.roomName||'')}</span>`;
+
+  const text = document.createElement('div');
+  text.className = 'rev-text';
+  text.innerHTML = tagHL(r.text||'');
+
+  const approvals = document.createElement('div');
+  approvals.className = 'team-approvals';
+  TEAM_APPROVERS.forEach(u => {
+    const approved = r.approvals?.[u] === true;
+    const isMe = u === user.name;
+    const chip = document.createElement('button');
+    chip.className = 'appr-chip' + (approved ? ' approved' : '') + (isMe && !isDone ? ' mine' : '');
+    chip.textContent = (approved ? '✓ ' : '○ ') + dName(u);
+    chip.title = isMe && !isDone ? (approved ? '클릭하여 취소' : '클릭하여 확인') : '';
+    if (isMe && !isDone) {
+      chip.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        chip.disabled = true;
+        const newVal = !approved;
+        const newApprovals = { ...(r.approvals||{}), [u]: newVal };
+        const allApproved = TEAM_APPROVERS.every(n => newApprovals[n] === true);
+        try {
+          await update(dbRef(db, `teamReviews/${r.id}`), {
+            [`approvals/${u}`]: newVal,
+            ...(allApproved ? { checked: true, checkedAt: Date.now() } : { checked: false, checkedAt: null })
+          });
+        } catch(err) {
+          alert('업데이트 실패: ' + err.message);
+          chip.disabled = false;
+        }
+      });
+    }
+    approvals.appendChild(chip);
   });
+
+  const time = document.createElement('div');
+  time.className = 'rev-time';
+  time.style.marginTop = '4px';
+  time.textContent = ts2time(r.timestamp);
+
+  body.appendChild(meta);
+  body.appendChild(text);
+  body.appendChild(approvals);
+  body.appendChild(time);
+
+  el.appendChild(cbWrap);
+  el.appendChild(body);
+  if (canDelete(r)) el.appendChild(makeDelBtn(`teamReviews/${r.id}`));
   return el;
 }
 
@@ -2635,6 +2730,7 @@ function makeWorkItem(r, isDone) {
       alert('업데이트 실패: ' + err.message);
     } finally { e.target.disabled = false; }
   });
+  if (canDelete(r)) el.appendChild(makeDelBtn(`workRequests/${r.id}`));
   return el;
 }
 
@@ -3421,7 +3517,7 @@ function renderDetailModal() {
       break;
     }
     case 'team-pend': {
-      const items = cachedTeamReviews.filter(r => !r.checked)
+      const items = cachedTeamReviews.filter(r => !isTeamAllApproved(r))
                                      .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
       titleEl.textContent = '팀원 요청';
       countEl.textContent = `${items.length}건`;
@@ -3434,7 +3530,7 @@ function renderDetailModal() {
       break;
     }
     case 'team-done': {
-      const items = cachedTeamReviews.filter(r => r.checked)
+      const items = cachedTeamReviews.filter(r => isTeamAllApproved(r))
                                      .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
       titleEl.textContent = '팀원 완료';
       countEl.textContent = `${items.length}건`;
@@ -3493,44 +3589,92 @@ function renderDetailModal() {
 function makeDetailRevItem(r, isDone, type) {
   const isWork = type === 'work';
   const isTeam = type === 'team';
+  const fbPath = isWork ? `workRequests/${r.id}` : isTeam ? `teamReviews/${r.id}` : `reviews/${r.id}`;
   const el = document.createElement('div');
   el.className = 'det-rev-card' + (isDone ? ' done' : '') + (isWork || isTeam ? ' work' : '');
   const color  = ucolor(r.userName);
   const dispN  = dName(r.userName);
   const accentColor = isWork ? '#27AE60' : isTeam ? '#9B59B6' : 'var(--primary)';
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:4px;align-items:center;padding-top:2px">
-      <input type="checkbox" class="rev-cb" ${isDone?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:${accentColor}">
-    </div>
-    <div style="flex:1;min-width:0">
-      <div class="det-rev-meta">
-        <div class="det-rev-av" style="background:${color}">${esc((dispN||'?')[0])}</div>
-        <span class="det-rev-nm">${esc(dispN)}</span>
-        <span class="det-room-tag" data-room="${esc(r.roomId||'')}">${esc(r.roomName||'')}</span>
-        <span class="det-rev-time">${esc(ts2time(r.timestamp))}</span>
-      </div>
-      <div class="det-rev-text">${tagHL(r.text||'')}</div>
-    </div>`;
 
-  // 체크박스 토글
-  el.querySelector('.rev-cb').addEventListener('change', async (e) => {
-    e.target.disabled = true;
-    const path = isWork ? `workRequests/${r.id}` : isTeam ? `teamReviews/${r.id}` : `reviews/${r.id}`;
-    try {
-      await update(dbRef(db, path), { checked: !isDone, checkedAt: !isDone ? Date.now() : null });
-    } catch(err) {
-      e.target.checked = isDone;
-      alert('업데이트 실패: ' + err.message);
-    } finally { e.target.disabled = false; }
+  // 좌측: 체크박스 (팀원 타입은 전체완료 표시)
+  const leftCol = document.createElement('div');
+  leftCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center;padding-top:2px;flex-shrink:0';
+
+  if (isTeam) {
+    const allApproved = isTeamAllApproved(r);
+    leftCol.innerHTML = `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;border:2px solid ${allApproved?'#4CAF50':'var(--border)'};background:${allApproved?'#4CAF50':'transparent'};font-size:10px;color:#fff;font-weight:700">${allApproved?'✓':''}</span>`;
+  } else {
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.className = 'rev-cb'; cb.checked = isDone;
+    cb.style.cssText = `width:16px;height:16px;cursor:pointer;accent-color:${accentColor}`;
+    cb.addEventListener('change', async (e) => {
+      e.target.disabled = true;
+      try {
+        await update(dbRef(db, fbPath), { checked: !isDone, checkedAt: !isDone ? Date.now() : null });
+      } catch(err) {
+        e.target.checked = isDone;
+        alert('업데이트 실패: ' + err.message);
+      } finally { e.target.disabled = false; }
+    });
+    leftCol.appendChild(cb);
+  }
+
+  // 본문
+  const bodyDiv = document.createElement('div');
+  bodyDiv.style.cssText = 'flex:1;min-width:0';
+
+  const meta = document.createElement('div');
+  meta.className = 'det-rev-meta';
+  meta.innerHTML = `<div class="det-rev-av" style="background:${color}">${esc((dispN||'?')[0])}</div><span class="det-rev-nm">${esc(dispN)}</span><span class="det-room-tag" data-room="${esc(r.roomId||'')}">${esc(r.roomName||'')}</span><span class="det-rev-time">${esc(ts2time(r.timestamp))}</span>`;
+  meta.querySelector('.det-room-tag').addEventListener('click', () => {
+    if (r.roomId && allRooms[r.roomId]) { closeDetailModal(); selectRoom(r.roomId); }
   });
 
-  // 방 태그 클릭 → 해당 방으로 이동
-  el.querySelector('.det-room-tag').addEventListener('click', () => {
-    if (r.roomId && allRooms[r.roomId]) {
-      closeDetailModal();
-      selectRoom(r.roomId);
-    }
-  });
+  const textDiv = document.createElement('div');
+  textDiv.className = 'det-rev-text';
+  textDiv.innerHTML = tagHL(r.text||'');
+
+  bodyDiv.appendChild(meta);
+  bodyDiv.appendChild(textDiv);
+
+  // 팀원 타입: 승인 칩 추가
+  if (isTeam) {
+    const approvals = document.createElement('div');
+    approvals.className = 'team-approvals';
+    approvals.style.marginTop = '8px';
+    TEAM_APPROVERS.forEach(u => {
+      const approved = r.approvals?.[u] === true;
+      const isMe = u === user.name;
+      const chip = document.createElement('button');
+      chip.className = 'appr-chip' + (approved ? ' approved' : '') + (isMe && !isDone ? ' mine' : '');
+      chip.textContent = (approved ? '✓ ' : '○ ') + dName(u);
+      chip.title = isMe && !isDone ? (approved ? '클릭하여 취소' : '클릭하여 확인') : '';
+      if (isMe && !isDone) {
+        chip.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          chip.disabled = true;
+          const newVal = !approved;
+          const newApprovals = { ...(r.approvals||{}), [u]: newVal };
+          const allApproved = TEAM_APPROVERS.every(n => newApprovals[n] === true);
+          try {
+            await update(dbRef(db, `teamReviews/${r.id}`), {
+              [`approvals/${u}`]: newVal,
+              ...(allApproved ? { checked: true, checkedAt: Date.now() } : { checked: false, checkedAt: null })
+            });
+          } catch(err) {
+            alert('업데이트 실패: ' + err.message);
+            chip.disabled = false;
+          }
+        });
+      }
+      approvals.appendChild(chip);
+    });
+    bodyDiv.appendChild(approvals);
+  }
+
+  el.appendChild(leftCol);
+  el.appendChild(bodyDiv);
+  if (canDelete(r)) el.appendChild(makeDelBtn(fbPath));
 
   return el;
 }
@@ -3570,6 +3714,7 @@ function renderDetailFiles(container) {
     images.forEach(f => {
       const card = document.createElement('div');
       card.className = 'det-img-card';
+      card.style.position = 'relative';
       card.innerHTML = `
         <img src="${esc(f.fileUrl)}" alt="${esc(f.fileName)}" loading="lazy">
         <div class="det-img-info">
@@ -3577,7 +3722,22 @@ function renderDetailFiles(container) {
           <div class="det-img-sub">${esc(dName(f.userName))}</div>
           <div class="det-img-room">${esc(f.roomName||'')}</div>
         </div>`;
-      card.addEventListener('click', () => openLightbox(f.fileUrl));
+      card.querySelector('img').addEventListener('click', () => openLightbox(f.fileUrl));
+      if (f.userName === user.name || user.name === ADMIN_USER) {
+        const dBtn = document.createElement('button');
+        dBtn.textContent = '🗑️';
+        dBtn.style.cssText = 'position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);border:none;border-radius:4px;color:#fff;font-size:13px;padding:2px 5px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1';
+        dBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('이 파일을 삭제하시겠습니까?')) return;
+          dBtn.disabled = true;
+          try { await remove(dbRef(db, `files/${f.id}`)); }
+          catch(err) { alert('삭제 실패: ' + err.message); dBtn.disabled = false; }
+        });
+        card.addEventListener('mouseenter', () => dBtn.style.opacity = '1');
+        card.addEventListener('mouseleave', () => dBtn.style.opacity = '0');
+        card.appendChild(dBtn);
+      }
       grid.appendChild(card);
     });
     container.appendChild(grid);
@@ -3585,10 +3745,13 @@ function renderDetailFiles(container) {
 
   if (docs.length) {
     docs.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;align-items:center;gap:8px';
       const row = document.createElement('a');
       row.className = 'det-doc-row';
       row.href = f.fileUrl;
       row.target = '_blank';
+      row.style.flex = '1';
       row.innerHTML = `
         <div style="font-size:26px;flex-shrink:0">${fileIcon(f.fileName)}</div>
         <div style="flex:1;min-width:0">
@@ -3596,7 +3759,23 @@ function renderDetailFiles(container) {
           <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(dName(f.userName))} · ${esc(f.roomName||'')} · ${esc(ts2time(f.timestamp))}</div>
         </div>
         <div class="det-doc-dl">다운로드 ↗</div>`;
-      container.appendChild(row);
+      wrap.appendChild(row);
+      if (f.userName === user.name || user.name === ADMIN_USER) {
+        const dBtn = document.createElement('button');
+        dBtn.className = 'del-btn';
+        dBtn.title = '삭제';
+        dBtn.textContent = '🗑️';
+        dBtn.style.flexShrink = '0';
+        dBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (!confirm('이 파일을 삭제하시겠습니까?')) return;
+          dBtn.disabled = true;
+          try { await remove(dbRef(db, `files/${f.id}`)); }
+          catch(err) { alert('삭제 실패: ' + err.message); dBtn.disabled = false; }
+        });
+        wrap.appendChild(dBtn);
+      }
+      container.appendChild(wrap);
     });
   }
 }
