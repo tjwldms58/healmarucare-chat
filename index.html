@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.7 | 2026-09-05 | 멤버 선택 체크박스 Electron 버그 수정 + maintenance reload 버그 수정 -->
+<!-- v3.8 | 2026-09-05 | Firebase 인증 상태 표시기 + 에러 알림 추가 (진단용) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -818,7 +818,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.7</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.8</p>
   </div>
 </div>
 
@@ -1015,6 +1015,7 @@
     </div>
     <div class="h-right">
       <span id="db-status" class="h-db">연결 중...</span>
+      <span id="auth-status" class="h-db" style="margin-left:4px">인증 중...</span>
       <div class="h-avatar" id="h-av"></div>
       <span class="h-uname" id="h-uname"></span>
       <button class="btn-edit-name" id="edit-name-btn" title="표시 이름 변경">✏️</button>
@@ -1485,16 +1486,23 @@ function login(name, pw) {
   return true;
 }
 // Firebase 익명 인증 → uid : userName 매핑 저장 (Security Rules용)
+function _setAuthStatus(ok, msg) {
+  const el = document.getElementById('auth-status');
+  if (!el) return;
+  el.textContent = ok ? '● 인증됨' : ('✗ ' + msg);
+  el.className = 'h-db' + (ok ? ' ok' : '');
+  el.style.color = ok ? '' : '#e55';
+}
 async function signInToFirebase() {
-  if (!auth) return;
+  if (!auth) { _setAuthStatus(false, 'auth없음'); return; }
   // auth 상태 변경 시(토큰 갱신·uid 재발급 등) userSessions 자동 갱신
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser && user?.name) {
       try {
-        // uid가 바뀌었을 때(토큰 갱신 등) userSessions 자동 갱신
         await set(dbRef(db, `userSessions/${firebaseUser.uid}`), user.name);
-        // 메시지 리스너 재연결은 listenMessages 자체 cancel 콜백이 처리
+        _setAuthStatus(true, '');
       } catch(e) {
+        _setAuthStatus(false, e.code || e.message);
         console.warn('userSessions 갱신 실패:', e);
       }
     }
@@ -1503,7 +1511,9 @@ async function signInToFirebase() {
     const cred = await signInAnonymously(auth);
     const uid  = cred.user.uid;
     await set(dbRef(db, `userSessions/${uid}`), user.name);
+    _setAuthStatus(true, '');
   } catch(e) {
+    _setAuthStatus(false, e.code || e.message);
     console.warn('Firebase anonymous sign-in failed:', e);
   }
 }
@@ -1615,7 +1625,8 @@ async function loadRoles() {
 }
 async function saveRole(name, role) {
   userRoles[name] = role;
-  try { await update(dbRef(db, 'config/roles'), { [name]: role }); } catch(e) {}
+  try { await update(dbRef(db, 'config/roles'), { [name]: role }); }
+  catch(e) { alert('직책 저장 실패: ' + (e.code || e.message)); }
 }
 function getUserRole(name) {
   return userRoles[name] || '힐마루케어 직원';
