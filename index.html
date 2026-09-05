@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.13 | 2026-09-05 | 삭제 기능 추가 + 팀원요청 전원 체크 시 검토완료 이동 -->
+<!-- v3.15 | 2026-09-05 | 패널 다중 데이터 표시 수정 (orderByChild 제거 → 클라이언트 정렬) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -854,7 +854,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.13</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.15</p>
   </div>
 </div>
 
@@ -1395,6 +1395,13 @@ let announcementListener = null; // 공지 리스너
 function esc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg, duration = 3000, color = 'var(--primary)') {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${color};color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;opacity:1;transition:opacity .4s;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25)`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, duration);
 }
 function tagHL(text) {
   return esc(text)
@@ -2286,6 +2293,7 @@ async function sendMessage() {
         });
       } catch(revErr) {
         console.error('Reviews push error:', revErr.message);
+        showToast('⚠️ 검토요청 등록 실패 (Firebase 권한 확인 필요): ' + revErr.code, 5000, '#e55');
       }
     }
 
@@ -2295,10 +2303,11 @@ async function sendMessage() {
         await push(dbRef(db, 'teamReviews'), {
           msgId: msgRef.key, text, roomId: curRoomId,
           roomName: curRoom?.name || '', userName: user.name,
-          timestamp, checked: false
+          timestamp, checked: false, approvals: {}
         });
       } catch(teamErr) {
         console.error('TeamReviews push error:', teamErr.message);
+        showToast('⚠️ 팀원요청 등록 실패 (Firebase 권한 확인 필요): ' + teamErr.code, 5000, '#e55');
       }
     }
 
@@ -2312,6 +2321,7 @@ async function sendMessage() {
         });
       } catch(workErr) {
         console.error('WorkRequests push error:', workErr.message);
+        showToast('⚠️ 경영지원 요청 등록 실패 (Firebase 권한 확인 필요): ' + workErr.code, 5000, '#e55');
       }
     }
 
@@ -2490,13 +2500,14 @@ function renderFilesGallery(files) {
 // ──────────────────────────────────────────────────────
 function listenReviews() {
   if (listeners.reviews) listeners.reviews();
-  const revQuery = query(dbRef(db, 'reviews'), orderByChild('timestamp'));
-  listeners.reviews = onValue(revQuery, snap => {
+  // orderByChild 제거 → 클라이언트 정렬로 전체 데이터 수신 (indexOn 불필요)
+  listeners.reviews = onValue(dbRef(db, 'reviews'), snap => {
     const all = [];
     snap.forEach(c => all.push({ id: c.key, ...c.val() }));
     renderReviews(all);
   }, err => {
-    console.error('Reviews listener error (Firebase 권한 확인 필요):', err.message);
+    console.error('Reviews listener error:', err.message);
+    showToast('⚠️ 검토요청 읽기 실패: ' + err.code, 5000, '#e55');
   });
 }
 
@@ -2557,13 +2568,13 @@ function makeRevItem(r, isDone) {
 // ──────────────────────────────────────────────────────
 function listenWorkRequests() {
   if (listeners.workRequests) listeners.workRequests();
-  const wrQuery = query(dbRef(db, 'workRequests'), orderByChild('timestamp'));
-  listeners.workRequests = onValue(wrQuery, snap => {
+  listeners.workRequests = onValue(dbRef(db, 'workRequests'), snap => {
     const all = [];
     snap.forEach(c => all.push({ id: c.key, ...c.val() }));
     renderWorkRequests(all);
   }, err => {
-    console.error('WorkRequests listener error (Firebase 권한 확인 필요):', err.message);
+    console.error('WorkRequests listener error:', err.message);
+    showToast('⚠️ 경영지원 읽기 실패: ' + err.code, 5000, '#e55');
   });
 }
 
@@ -2572,13 +2583,13 @@ function listenWorkRequests() {
 // ──────────────────────────────────────────────────────
 function listenTeamReviews() {
   if (listeners.teamReviews) listeners.teamReviews();
-  const q = query(dbRef(db, 'teamReviews'), orderByChild('timestamp'));
-  listeners.teamReviews = onValue(q, snap => {
+  listeners.teamReviews = onValue(dbRef(db, 'teamReviews'), snap => {
     const all = [];
     snap.forEach(c => all.push({ id: c.key, ...c.val() }));
     renderTeamReviews(all);
   }, err => {
     console.error('TeamReviews listener error:', err.message);
+    showToast('⚠️ 팀원요청 읽기 실패: ' + err.code, 5000, '#e55');
   });
 }
 
