@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.0 | 2026-09-05 | 팀원요청·경영지원탭에 파일섹션추가·메시지리스너자동재연결 -->
+<!-- v3.1 | 2026-09-05 | 메시지입력버그수정·입력창포커스강화·send버튼안전망추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -589,6 +589,7 @@
     #input-area {
       padding: 10px 14px; background: var(--surface);
       border-top: 1px solid var(--border); flex-shrink: 0;
+      position: relative; z-index: 1; pointer-events: auto;
     }
     .input-row { display: flex; align-items: flex-end; gap: 8px; }
     .input-wrap {
@@ -608,6 +609,7 @@
       flex: 1; border: none; background: none; outline: none;
       font-size: 14px; font-family: inherit; color: var(--text);
       resize: none; max-height: 120px; min-height: 22px; line-height: 1.5;
+      pointer-events: auto; user-select: text; -webkit-user-select: text;
     }
     #msg-input::placeholder { color: var(--text-muted); }
     .btn-send {
@@ -816,7 +818,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.0</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.1</p>
   </div>
 </div>
 
@@ -1489,9 +1491,9 @@ async function signInToFirebase() {
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser && user?.name) {
       try {
+        // uid가 바뀌었을 때(토큰 갱신 등) userSessions 자동 갱신
         await set(dbRef(db, `userSessions/${firebaseUser.uid}`), user.name);
-        // 세션 갱신 후 메시지 리스너가 끊어졌으면 재연결
-        if (curRoomId && !listeners.msgs) listenMessages(curRoomId);
+        // 메시지 리스너 재연결은 listenMessages 자체 cancel 콜백이 처리
       } catch(e) {
         console.warn('userSessions 갱신 실패:', e);
       }
@@ -1841,6 +1843,11 @@ function selectRoom(id) {
   listenAnnouncement(id);
   // 채팅 탭으로 이동
   switchTab('chat');
+  // 입력창 포커스 (Electron 환경에서 포커스 보장)
+  setTimeout(() => {
+    const inp = document.getElementById('msg-input');
+    if (inp) inp.focus();
+  }, 100);
 }
 
 async function createRoom(name, members) {
@@ -2016,6 +2023,8 @@ async function sendMessage() {
   if (!text || !curRoomId || !db) return;
   const btn = document.getElementById('send-btn');
   btn.disabled = true;
+  // 안전망: 10초 후 버튼 강제 재활성화 (무한 비활성화 방지)
+  const safeTimer = setTimeout(() => { btn.disabled = false; }, 10000);
   const hasTag     = text.includes('@부대표님');
   const hasTeamTag = text.includes('@팀원');
   const hasWorkTag = text.includes('@경영지원');
@@ -2073,6 +2082,7 @@ async function sendMessage() {
   } catch(e) {
     alert('메시지 전송 실패. 다시 시도해주세요. ' + e.message);
   } finally {
+    clearTimeout(safeTimer);
     btn.disabled = false;
     input.focus();
   }
@@ -2658,6 +2668,12 @@ document.getElementById('room-name-input').addEventListener('keydown', e => {
 });
 
 document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+// input-area 클릭 시 textarea 포커스 (Electron 환경 방어)
+document.getElementById('input-area').addEventListener('click', () => {
+  const inp = document.getElementById('msg-input');
+  if (inp && !inp.disabled) inp.focus();
+});
 
 document.getElementById('msg-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
