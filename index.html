@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.1 | 2026-09-05 | 메시지입력버그수정·입력창포커스강화·send버튼안전망추가 -->
+<!-- v3.2 | 2026-09-05 | listenRooms onValue교체·cancel콜백추가·입력창숨김버그완전수정 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -818,7 +818,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.1</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.2</p>
   </div>
 </div>
 
@@ -1268,7 +1268,7 @@
 <script type="module">
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getDatabase, ref as dbRef, onValue, off, push, set, update, get, query,
-         orderByChild, limitToLast, onChildAdded, onChildRemoved }
+         orderByChild, limitToLast }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
@@ -1735,57 +1735,80 @@ function listenRooms() {
   if (listeners.rooms) listeners.rooms();
 
   const roomListeners = {}; // roomId → unsubscribe fn
+  let   prevRoomIds   = new Set(); // 직전 방 목록 (diff 계산용)
 
   // 기존 방 마이그레이션: userRooms 인덱스가 없는 방을 채워줌
   migrateUserRooms();
 
   const userRoomsRef = dbRef(db, `userRooms/${user.name}`);
 
-  // 내가 속한 새 방이 생길 때마다 해당 방만 구독
-  const unsubAdd = onChildAdded(userRoomsRef, snap => {
-    const rid = snap.key;
-    if (roomListeners[rid]) return; // 이미 구독 중
-    const roomRef = dbRef(db, `rooms/${rid}`);
-    roomListeners[rid] = onValue(roomRef, roomSnap => {
-      if (!roomSnap.exists()) {
-        delete allRooms[rid];
-        if (curRoomId === rid) { curRoomId = null; curRoom = null; }
-        renderRooms();
-        return;
-      }
-      const prev    = allRooms[rid];
-      const newRoom = roomSnap.val();
-      // 새 메시지 알림
-      if (prev && newRoom.lastMsgAt && newRoom.lastMsgAt > (prev.lastMsgAt || 0)) {
-        if (rid !== curRoomId && newRoom.lastMsgUser !== user.name) {
-          showNotif(newRoom.lastMsgUser, newRoom.lastMsgText || '', newRoom.name, rid);
-        }
-        lastSeenTs[rid] = newRoom.lastMsgAt;
-      } else if (!prev) {
-        lastSeenTs[rid] = newRoom.lastMsgAt || 0;
-      }
-      allRooms[rid] = newRoom;
-      renderRooms();
-    });
-  });
+  // ── onChildAdded/onChildRemoved 대신 onValue 사용 ──
+  // onChildRemoved는 Firebase 재연결·권한 에러 시 스퍼리어스하게 발생할 수 있어
+  // input-area가 의도치 않게 숨겨지는 버그의 원인이었습니다.
+  // onValue + 직접 diff 계산으로 교체합니다.
+  const unsubUserRooms = onValue(userRoomsRef, snap => {
+    const currentRoomIds = new Set();
+    if (snap.exists()) snap.forEach(child => currentRoomIds.add(child.key));
 
-  // 방에서 제거되면 구독 해제
-  const unsubRemove = onChildRemoved(userRoomsRef, snap => {
-    const rid = snap.key;
-    if (roomListeners[rid]) { roomListeners[rid](); delete roomListeners[rid]; }
-    delete allRooms[rid];
-    if (curRoomId === rid) {
-      curRoomId = null; curRoom = null;
-      document.getElementById('chat-hdr').hidden   = true;
-      document.getElementById('input-area').hidden = true;
-      document.getElementById('msgs').innerHTML    = '';
-    }
+    // ① 새로 추가된 방 → onValue 구독
+    currentRoomIds.forEach(rid => {
+      if (roomListeners[rid]) return; // 이미 구독 중
+      const roomRef = dbRef(db, `rooms/${rid}`);
+      roomListeners[rid] = onValue(roomRef, roomSnap => {
+        if (!roomSnap.exists()) {
+          delete allRooms[rid];
+          if (curRoomId === rid) { curRoomId = null; curRoom = null; }
+          renderRooms();
+          return;
+        }
+        const prev    = allRooms[rid];
+        const newRoom = roomSnap.val();
+        if (prev && newRoom.lastMsgAt && newRoom.lastMsgAt > (prev.lastMsgAt || 0)) {
+          if (rid !== curRoomId && newRoom.lastMsgUser !== user.name) {
+            showNotif(newRoom.lastMsgUser, newRoom.lastMsgText || '', newRoom.name, rid);
+          }
+          lastSeenTs[rid] = newRoom.lastMsgAt;
+        } else if (!prev) {
+          lastSeenTs[rid] = newRoom.lastMsgAt || 0;
+        }
+        allRooms[rid] = newRoom;
+        renderRooms();
+      }, err => {
+        // rooms/${rid} 권한 오류 → userSessions 재설정
+        console.warn(`rooms/${rid} 리스너 오류:`, err.message);
+        if (auth?.currentUser && user?.name) {
+          set(dbRef(db, `userSessions/${auth.currentUser.uid}`), user.name).catch(() => {});
+        }
+      });
+    });
+
+    // ② 제거된 방 → 구독 해제 + UI 정리
+    prevRoomIds.forEach(rid => {
+      if (!currentRoomIds.has(rid)) {
+        if (roomListeners[rid]) { roomListeners[rid](); delete roomListeners[rid]; }
+        delete allRooms[rid];
+        if (curRoomId === rid) {
+          curRoomId = null; curRoom = null;
+          document.getElementById('chat-hdr').hidden   = true;
+          document.getElementById('input-area').hidden = true;
+          document.getElementById('msgs').innerHTML    = '';
+        }
+      }
+    });
+
+    prevRoomIds = currentRoomIds;
     renderRooms();
+  }, err => {
+    // userRooms 권한 오류 → userSessions 재설정 후 3초 뒤 재시도
+    console.warn('userRooms 리스너 오류 (재연결 시도):', err.message);
+    if (auth?.currentUser && user?.name) {
+      set(dbRef(db, `userSessions/${auth.currentUser.uid}`), user.name).catch(() => {});
+    }
+    setTimeout(() => { if (user) listenRooms(); }, 3000);
   });
 
   listeners.rooms = () => {
-    unsubAdd();
-    unsubRemove();
+    unsubUserRooms();
     Object.values(roomListeners).forEach(u => u());
   };
 }
