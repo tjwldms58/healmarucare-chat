@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.31 | 2026-09-06 | 채팅방 개별 나가기(본인 화면에서만 삭제) + 방장 전체 삭제 기능 추가 -->
+<!-- v3.33 | 2026-09-06 | ⋮ 채팅방 옵션 버튼 색상을 검은색으로 변경 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -557,6 +557,12 @@
       display: flex; align-items: center; gap: 12px;
     }
     #chat-room-name { font-size: 16px; font-weight: 700; color: var(--text); }
+    #room-menu-btn {
+      background: none; border: none; color: #000;
+      font-size: 20px; font-weight: 700; cursor: pointer; padding: 4px 10px; border-radius: 6px;
+      transition: background .15s;
+    }
+    #room-menu-btn:hover { background: var(--sidebar); color: #000; }
     .m-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .m-chip { font-size: 11px; font-weight: 600; background: var(--sidebar); padding: 3px 8px; border-radius: 10px; }
 
@@ -861,7 +867,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.31</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.33</p>
   </div>
 </div>
 
@@ -1272,7 +1278,7 @@
               <div id="chat-room-name"></div>
               <div class="m-chips" id="member-chips"></div>
             </div>
-            <button id="room-menu-btn" class="btn-settings" title="채팅방 옵션" style="margin-left:auto">⋮</button>
+            <button id="room-menu-btn" title="채팅방 옵션" style="margin-left:auto">⋮</button>
           </div>
           <div id="announcement-bar" hidden style="padding:8px 18px;background:linear-gradient(90deg,var(--primary-lt),var(--surface));border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;flex-shrink:0">
             <span style="font-size:14px;flex-shrink:0">📢</span>
