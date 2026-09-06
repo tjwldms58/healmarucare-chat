@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.30 | 2026-09-06 | 채팅방목록/파일갤러리/커뮤니티 forEach 조기중단 버그 수정 (v3.20과 동일 원인) -->
+<!-- v3.31 | 2026-09-06 | 채팅방 개별 나가기(본인 화면에서만 삭제) + 방장 전체 삭제 기능 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -567,6 +567,8 @@
       padding: 4px 12px; border-radius: 12px;
     }
     .chat-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--text-muted); }
+    /* 채팅방 나가기 등 시스템 안내 메시지 */
+    .sys-msg { text-align: center; margin: 10px 0; font-size: 12px; color: var(--text-muted); }
     .center-msg { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); gap: 8px; }
     .spinner {
       width: 14px; height: 14px; border: 2px solid var(--border);
@@ -859,7 +861,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.30</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.31</p>
   </div>
 </div>
 
@@ -1079,6 +1081,20 @@
   </div>
 </div>
 
+<!-- ====== 채팅방 옵션 모달 ====== -->
+<div class="overlay" id="room-menu-modal" hidden>
+  <div class="modal" style="width:340px;max-width:92vw">
+    <div class="modal-hdr">채팅방 옵션</div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <button id="room-leave-btn" class="btn-sec" style="width:100%;padding:12px;text-align:left">🚪 채팅방 나가기</button>
+      <button id="room-destroy-btn" class="btn-sec" style="width:100%;padding:12px;text-align:left;color:#e55;border-color:#e55" hidden>💥 채팅방 전체 삭제 (모든 멤버에게서 삭제됩니다)</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" id="room-menu-cancel-btn" style="width:auto;padding:10px 22px">취소</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== 이미지 라이트박스 ====== -->
 <div id="lightbox" hidden>
   <img id="lightbox-img" src="" alt="">
@@ -1256,6 +1272,7 @@
               <div id="chat-room-name"></div>
               <div class="m-chips" id="member-chips"></div>
             </div>
+            <button id="room-menu-btn" class="btn-settings" title="채팅방 옵션" style="margin-left:auto">⋮</button>
           </div>
           <div id="announcement-bar" hidden style="padding:8px 18px;background:linear-gradient(90deg,var(--primary-lt),var(--surface));border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;flex-shrink:0">
             <span style="font-size:14px;flex-shrink:0">📢</span>
@@ -1993,6 +2010,11 @@ function listenRooms() {
           delete allRooms[rid];
           // curRoomId 리셋은 userRooms diff(② 제거된 방)에서만 처리
           // Firebase 캐시 없을 때 빈 스냅샷 false alarm 방지
+          // 단, 지금 열려있는 방이 방장에 의해 전체 삭제된 경우엔 즉시 화면을 초기화해준다.
+          if (rid === curRoomId) {
+            showToast('🗑️ 이 채팅방은 삭제되었습니다.', 4000, '#e55');
+            resetChatView();
+          }
           renderRooms();
           return;
         }
@@ -2130,6 +2152,58 @@ async function createRoom(name, members) {
   return rid;
 }
 
+// 채팅방 개별 나가기 — 본인 화면에서만 사라지고 다른 멤버 화면에는 그대로 유지됨.
+// 순서가 중요: 아직 멤버 자격이 있는 상태에서 먼저 시스템 메시지를 남긴 뒤,
+// members/userRooms에서 제거해야 보안 규칙(멤버만 쓰기 가능) 통과 가능.
+async function leaveRoom(roomId) {
+  const room = allRooms[roomId];
+  if (!room) return;
+  await push(dbRef(db, `messages/${roomId}`), {
+    type: 'system',
+    text: `${dName(user.name)}님이 나갔습니다.`,
+    timestamp: Date.now()
+  });
+  const updates = {};
+  updates[`rooms/${roomId}/members/${user.name}`] = null;
+  updates[`userRooms/${user.name}/${roomId}`] = null;
+  await update(dbRef(db), updates);
+  // 마지막 멤버가 나가면 방 자체를 정리 (메시지 → 방 순서로 삭제)
+  try {
+    const memSnap = await get(dbRef(db, `rooms/${roomId}/members`));
+    if (!memSnap.exists() || Object.keys(memSnap.val() || {}).length === 0) {
+      await set(dbRef(db, `messages/${roomId}`), null);
+      await set(dbRef(db, `rooms/${roomId}`), null);
+    }
+  } catch(e) { /* 정리 실패는 무시 — 남은 멤버가 없으므로 화면에 영향 없음 */ }
+}
+
+// 채팅방 전체 삭제(방장 전용) — 모든 멤버의 화면에서 사라짐.
+// Firebase 멀티패스 update는 보안 규칙을 트랜잭션 이후 상태로 검증하므로,
+// messages 삭제와 rooms/userRooms 삭제를 반드시 순차적으로 나눠서 처리한다.
+async function destroyRoom(roomId) {
+  const room = allRooms[roomId];
+  if (!room) return;
+  await set(dbRef(db, `messages/${roomId}`), null);
+  const updates = {};
+  updates[`rooms/${roomId}`] = null;
+  Object.keys(room.members || {}).forEach(m => { updates[`userRooms/${m}/${roomId}`] = null; });
+  await update(dbRef(db), updates);
+}
+
+// 방이 사라졌을 때(나가기/전체삭제 등) 현재 열려 있던 화면을 초기 상태로 되돌림
+function resetChatView() {
+  curRoomId = null;
+  curRoom   = null;
+  if (listeners.msgs) { listeners.msgs(); listeners.msgs = null; }
+  if (announcementListener) { announcementListener(); announcementListener = null; }
+  const annBar = document.getElementById('announcement-bar');
+  if (annBar) annBar.hidden = true;
+  document.getElementById('chat-hdr').hidden = true;
+  document.getElementById('input-area').hidden = true;
+  document.getElementById('msgs').innerHTML = '<div class="chat-empty"><div style="font-size:36px">💬</div><div style="font-size:13px;color:var(--text-sec)">채팅방을 선택하세요</div></div>';
+  document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+}
+
 // ──────────────────────────────────────────────────────
 // MESSAGES
 // ──────────────────────────────────────────────────────
@@ -2192,6 +2266,17 @@ function renderMessages(msgs) {
       dv.innerHTML = `<span>${esc(ts2date(msg.timestamp))}</span>`;
       container.appendChild(dv);
     }
+
+    // 시스템 안내 메시지 (채팅방 나가기 등) — 말풍선 없이 가운데 정렬로만 표시
+    if (msg.type === 'system') {
+      const sysDiv = document.createElement('div');
+      sysDiv.className = 'sys-msg';
+      sysDiv.textContent = msg.text || '';
+      container.appendChild(sysDiv);
+      prev = msg;
+      return;
+    }
+
     const isMe       = msg.userName === user.name;
     const color      = ucolor(msg.userName);
     const dispN      = dName(msg.userName);
@@ -3056,6 +3141,48 @@ document.getElementById('msg-input').addEventListener('input', function() {
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target === document.getElementById('modal'))
     document.getElementById('modal').hidden = true;
+});
+
+// 채팅방 옵션(⋮) — 나가기 / 방장 전체 삭제
+document.getElementById('room-menu-btn').addEventListener('click', () => {
+  if (!curRoomId || !curRoom) return;
+  document.getElementById('room-destroy-btn').hidden = curRoom.createdBy !== user.name;
+  document.getElementById('room-menu-modal').hidden = false;
+});
+
+document.getElementById('room-menu-cancel-btn').addEventListener('click', () => {
+  document.getElementById('room-menu-modal').hidden = true;
+});
+
+document.getElementById('room-menu-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('room-menu-modal'))
+    document.getElementById('room-menu-modal').hidden = true;
+});
+
+document.getElementById('room-leave-btn').addEventListener('click', async () => {
+  if (!curRoomId) return;
+  if (!confirm(`'${curRoom?.name || ''}' 채팅방에서 나가시겠습니까?\n내 화면에서만 삭제되며, 다른 멤버는 영향을 받지 않습니다.`)) return;
+  const rid = curRoomId;
+  document.getElementById('room-menu-modal').hidden = true;
+  try {
+    await leaveRoom(rid);
+    resetChatView();
+  } catch(e) {
+    alert('채팅방 나가기 실패: ' + e.message);
+  }
+});
+
+document.getElementById('room-destroy-btn').addEventListener('click', async () => {
+  if (!curRoomId) return;
+  if (!confirm(`⚠️ '${curRoom?.name || ''}' 채팅방을 완전히 삭제하시겠습니까?\n이 방의 모든 멤버 화면에서 삭제되며, 되돌릴 수 없습니다.`)) return;
+  const rid = curRoomId;
+  document.getElementById('room-menu-modal').hidden = true;
+  try {
+    await destroyRoom(rid);
+    resetChatView();
+  } catch(e) {
+    alert('채팅방 삭제 실패: ' + e.message);
+  }
 });
 
 // ──────────────────────────────────────────────────────
