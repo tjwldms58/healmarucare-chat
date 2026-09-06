@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.26 | 2026-09-06 | 새 채팅방 멤버 체크박스 시각 표시 개선 + 새 채팅방 목록 상단 표시 -->
+<!-- v3.29 | 2026-09-06 | 관리자 전용 기능은 이름 하드코딩 대신 ADMIN_USER 변수로 판정하도록 수정 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -859,7 +859,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.26</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.29</p>
   </div>
 </div>
 
@@ -2011,6 +2011,11 @@ function listenRooms() {
       }, err => {
         // rooms/${rid} 권한 오류 → userSessions 재설정
         console.warn(`rooms/${rid} 리스너 오류:`, err.message);
+        // 진단용 토스트 — 관리자 계정에만 표시 (다른 사용자는 알 필요 없음)
+        // ADMIN_USER는 관리자 권한 양도 시 자동으로 갱신되므로 이름을 직접 적지 않음
+        if (user?.name === ADMIN_USER) {
+          showToast(`⚠️ 채팅방(${rid}) 정보를 불러오지 못했습니다: ${err.code || err.message}`, 6000, '#e55');
+        }
         if (auth?.currentUser && user?.name) {
           set(dbRef(db, `userSessions/${auth.currentUser.uid}`), user.name).catch(() => {});
         }
@@ -2034,6 +2039,11 @@ function listenRooms() {
   }, err => {
     // userRooms 권한 오류 → userSessions 재설정 후 3초 뒤 재시도
     console.warn('userRooms 리스너 오류 (재연결 시도):', err.message);
+    // 진단용 토스트 — 관리자 계정에만 표시 (다른 사용자는 알 필요 없음)
+    // ADMIN_USER는 관리자 권한 양도 시 자동으로 갱신되므로 이름을 직접 적지 않음
+    if (user?.name === ADMIN_USER) {
+      showToast(`⚠️ 채팅방 목록을 불러오지 못했습니다: ${err.code || err.message} (3초 후 재시도)`, 6000, '#e55');
+    }
     if (auth?.currentUser && user?.name) {
       set(dbRef(db, `userSessions/${auth.currentUser.uid}`), user.name).catch(() => {});
     }
