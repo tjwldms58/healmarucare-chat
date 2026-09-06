@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.21 | 2026-09-06 | 채팅 삭제 시 검토요청/팀원요청/업무요청도 함께 삭제 -->
+<!-- v3.24 | 2026-09-06 | 프로필 사진 업로드 오류 처리 강화 + 사용법 업데이트 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -1884,7 +1884,7 @@ function initFirebaseEarly() {
     });
 
     // 점검 모드 실시간 감시 (config/maintenance = true 이면 점검 화면 표시)
-    let _prevMaintState = null; // v3.5: true→false 전환 시에만 reload
+    let _prevMaintState = null;
     onValue(dbRef(db, 'config/maintenance'), snap => {
       const isMaint = snap.val() === true;
       const maintEl  = document.getElementById('maintenance-screen');
@@ -1896,9 +1896,15 @@ function initFirebaseEarly() {
         appEl.hidden   = true;
       } else {
         maintEl.hidden = true;
-        // 점검이 켜져 있다가 꺼진 경우에만 새로고침 (Firebase 이중 호출 false alarm 방지)
+        // 점검 종료 시 UI 직접 복원 — location.reload() 방식은 Firebase 캐시가
+        // true→false 순으로 재발화될 때 무한 루프를 유발할 수 있어 제거.
+        // 이미 로그인된 세션이라면 appEl을 유지하고, 아니라면 로그인 화면을 복원.
         if (_prevMaintState === true) {
-          location.reload();
+          if (user) {
+            appEl.hidden   = false;  // 로그인 상태면 앱 화면 복원
+          } else {
+            loginEl.hidden = false;  // 비로그인 상태면 로그인 화면 복원
+          }
         }
       }
       _prevMaintState = isMaint;
@@ -2379,7 +2385,8 @@ function startEditMsg(msg, wrap) {
     try {
       const hasTag     = newText.includes('@부대표님');
       const hasTeamTag = newText.includes('@팀원');
-      await update(dbRef(db, `messages/${curRoomId}/${msg.id}`), { text: newText, hasTag, hasTeamTag, edited: true });
+      const hasWorkTag = newText.includes('@경영지원');
+      await update(dbRef(db, `messages/${curRoomId}/${msg.id}`), { text: newText, hasTag, hasTeamTag, hasWorkTag, edited: true });
     } catch(err) { alert('수정 실패: ' + err.message); }
   });
 }
@@ -3266,25 +3273,34 @@ function applyAllAvatars() {
 
 async function uploadProfilePhoto(file) {
   if (!storage || !file) return null;
-  // compress to canvas 200x200
-  const bmp = await createImageBitmap(file);
-  const canvas = document.createElement('canvas');
-  canvas.width = 200; canvas.height = 200;
-  const ctx = canvas.getContext('2d');
-  const size = Math.min(bmp.width, bmp.height);
-  const ox = (bmp.width - size) / 2, oy = (bmp.height - size) / 2;
-  ctx.drawImage(bmp, ox, oy, size, size, 0, 0, 200, 200);
-  return new Promise(resolve => canvas.toBlob(async blob => {
-    try {
-      const sRef = storageRef(storage, `profiles/${user.name}/photo`);
-      await uploadBytes(sRef, blob, { contentType: 'image/jpeg' });
-      const url = await getDownloadURL(sRef);
-      await set(dbRef(db, `profiles/${user.name}/photoUrl`), url);
-      photoUrls[user.name] = url;
-      applyAllAvatars();
-      resolve(url);
-    } catch(e) { console.error('Photo upload error:', e); resolve(null); }
-  }, 'image/jpeg', 0.85));
+  try {
+    // 이미지 → Canvas 200×200 정사각형 크롭 + JPEG 압축
+    const bmp = await createImageBitmap(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = 200; canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    const size = Math.min(bmp.width, bmp.height);
+    const ox = (bmp.width - size) / 2, oy = (bmp.height - size) / 2;
+    ctx.drawImage(bmp, ox, oy, size, size, 0, 0, 200, 200);
+    bmp.close?.(); // ImageBitmap 메모리 해제
+    return await new Promise((resolve, reject) =>
+      canvas.toBlob(async blob => {
+        if (!blob) { reject(new Error('이미지 변환 실패')); return; }
+        try {
+          const sRef = storageRef(storage, `profiles/${user.name}/photo`);
+          await uploadBytes(sRef, blob, { contentType: 'image/jpeg' });
+          const url = await getDownloadURL(sRef);
+          await set(dbRef(db, `profiles/${user.name}/photoUrl`), url);
+          photoUrls[user.name] = url;
+          applyAllAvatars();
+          resolve(url);
+        } catch(err) { reject(err); }
+      }, 'image/jpeg', 0.85)
+    );
+  } catch(e) {
+    console.error('Photo upload error:', e);
+    throw e; // 호출부에서 catch해서 사용자에게 알림
+  }
 }
 
 // Profile photo input listener
@@ -3293,16 +3309,44 @@ document.getElementById('profile-photo-input').addEventListener('change', async 
   if (!file) return;
   e.target.value = '';
   const preview = document.getElementById('profile-photo-preview');
-  if (preview) {
-    preview.innerHTML = '<span style="font-size:12px">업로드 중...</span>';
+
+  // 파일 크기 체크 (20MB 초과 차단)
+  if (file.size > 20 * 1024 * 1024) {
+    showToast('⚠️ 사진 크기는 20MB 이하여야 합니다.', 4000, '#e55');
+    return;
   }
-  const url = await uploadProfilePhoto(file);
-  if (url && preview) {
-    preview.style.background = ucolor(user.name);
-    preview.innerHTML = `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover">`;
-  } else if (preview) {
-    preview.innerHTML = '';
-    preview.textContent = (dName(user.name)||'?')[0];
+  // 이미지 파일 타입 체크
+  if (!file.type.startsWith('image/')) {
+    showToast('⚠️ 이미지 파일만 업로드할 수 있습니다.', 4000, '#e55');
+    return;
+  }
+
+  if (preview) preview.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">업로드 중...</span>';
+
+  try {
+    const url = await uploadProfilePhoto(file);
+    if (url && preview) {
+      preview.style.background = ucolor(user.name);
+      preview.innerHTML = `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover">`;
+      showToast('✅ 프로필 사진이 변경되었습니다.', 3000, '#2AAD8F');
+    }
+  } catch(err) {
+    // 사용자에게 실패 원인 노출
+    const msg = err?.code === 'storage/unauthorized'
+      ? '⚠️ 사진 업로드 권한이 없습니다. (Firebase Storage 규칙 확인 필요)'
+      : `⚠️ 사진 업로드 실패: ${err?.message || '알 수 없는 오류'}`;
+    showToast(msg, 5000, '#e55');
+    // 미리보기 원복
+    if (preview) {
+      const oldUrl = photoUrls[user.name];
+      if (oldUrl) {
+        preview.style.background = ucolor(user.name);
+        preview.innerHTML = `<img src="${esc(oldUrl)}" style="width:100%;height:100%;object-fit:cover">`;
+      } else {
+        preview.innerHTML = '';
+        preview.textContent = (dName(user.name)||'?')[0];
+      }
+    }
   }
 });
 
@@ -3314,12 +3358,25 @@ const DEFAULT_HELP = `📌 힐마루케어 대화의 장 사용법
 💬 채팅
 • 채팅 탭에서 채팅방을 선택하여 대화하세요.
 • + 버튼으로 새 채팅방을 만들 수 있어요.
-• 파일 아이콘(📎)으로 이미지/파일을 첨부할 수 있어요.
+• 파일 아이콘(📎)으로 이미지/파일을 첨부할 수 있어요. (최대 20MB)
+• 내 메시지에 마우스를 올리면 ✏️(수정) / 🗑️(삭제) 버튼이 나타납니다.
+• 메시지를 삭제하면 연결된 요청 항목(검토/팀원/업무)도 함께 삭제됩니다.
 
-🔍 검토요청
-• 메시지에 @부대표님 을 입력하면 검토 요청이 됩니다.
-• 해당 메시지는 왼쪽 '검토현황' 패널에 자동으로 표시돼요.
+🔍 검토요청 (@부대표님)
+• 메시지에 @부대표님 을 입력하면 검토 요청이 등록됩니다.
+• 해당 메시지는 왼쪽 '검토요청' 패널에 자동으로 표시돼요.
 • 검토 완료 후 체크하면 '검토완료'로 이동합니다.
+• 검토완료 항목에는 알림 배지가 표시되지 않아요.
+
+👥 팀원요청 (@팀원)
+• 메시지에 @팀원 을 입력하면 팀원 검토 요청이 등록됩니다.
+• 해당 메시지는 왼쪽 '팀원요청' 패널에 표시되며, 승인자(차규은·이청용·서지은) 3인이 각각 승인할 수 있어요.
+• 팀원요청 패널은 권한이 있는 사용자에게만 표시됩니다.
+
+🏢 업무요청 (@경영지원)
+• 메시지에 @경영지원 을 입력하면 경영지원팀 업무 요청이 등록됩니다.
+• 해당 메시지는 왼쪽 '업무요청(경영)' 패널에 표시됩니다.
+• 업무요청 패널은 권한이 있는 사용자에게만 표시됩니다.
 
 📢 공지
 • 채팅 메시지 위에 마우스를 올리면 📌 버튼이 나타납니다.
@@ -3327,14 +3384,20 @@ const DEFAULT_HELP = `📌 힐마루케어 대화의 장 사용법
 • 공지를 해제하려면 공지 영역의 ✕ 버튼을 클릭하세요.
 
 👤 멤버 목록
-• 하단 '목록' 탭에서 전체 멤버를 확인할 수 있어요.
+• 하단 '목록' 탭에서 전체 멤버와 직책을 확인할 수 있어요.
 
 ⚙️ 개인 설정
-• 헤더의 🔧 버튼으로 알림, 야간모드, 화면 밝기를 설정하세요.
+• 헤더의 ⚙️ 버튼으로 알림, 야간모드, 화면 밝기를 설정하세요.
 • ✏️ 버튼으로 표시 이름과 프로필 사진을 변경할 수 있어요.
+• 프로필 사진은 원형으로 자동 크롭되며 최대 20MB까지 업로드 가능해요.
 
 🏢 커뮤니티
-• '커뮤니티' 탭에서 전체 공지/소식을 공유하세요.`;
+• '커뮤니티' 탭에서 전체 공지/소식을 공유하세요.
+• 이미지 첨부도 가능합니다.
+
+🔒 시스템 점검
+• 관리자가 점검 모드를 켜면 '시스템 점검 중' 안내가 표시됩니다.
+• 점검이 끝나면 자동으로 화면이 복원됩니다.`;
 
 async function loadHelp() {
   try {
