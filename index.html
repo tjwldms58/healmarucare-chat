@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.29 | 2026-09-06 | 관리자 전용 기능은 이름 하드코딩 대신 ADMIN_USER 변수로 판정하도록 수정 -->
+<!-- v3.30 | 2026-09-06 | 채팅방목록/파일갤러리/커뮤니티 forEach 조기중단 버그 수정 (v3.20과 동일 원인) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -859,7 +859,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.29</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.30</p>
   </div>
 </div>
 
@@ -1982,7 +1982,7 @@ function listenRooms() {
   // onValue + 직접 diff 계산으로 교체합니다.
   const unsubUserRooms = onValue(userRoomsRef, snap => {
     const currentRoomIds = new Set();
-    if (snap.exists()) snap.forEach(child => currentRoomIds.add(child.key));
+    if (snap.exists()) snap.forEach(child => { currentRoomIds.add(child.key); });
 
     // ① 새로 추가된 방 → onValue 구독
     currentRoomIds.forEach(rid => {
@@ -2483,7 +2483,7 @@ function listenFiles() {
   const fQuery = query(dbRef(db, 'files'), orderByChild('timestamp'), limitToLast(50));
   listeners.files = onValue(fQuery, snap => {
     const files = [];
-    snap.forEach(c => files.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { files.push({ id: c.key, ...c.val() }); });
     renderFilesGallery(files.reverse());
   });
 }
@@ -2790,7 +2790,7 @@ function listenCommunity() {
   const cQuery = query(dbRef(db, 'community'), orderByChild('timestamp'), limitToLast(50));
   listeners.community = onValue(cQuery, snap => {
     const posts = [];
-    snap.forEach(c => posts.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { posts.push({ id: c.key, ...c.val() }); });
     renderCommunity(posts.reverse());
   });
 }
