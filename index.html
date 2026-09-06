@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.19 | 2026-09-05 | 채팅 메시지 덮어쓰기 버그 수정 (orderByChild 제거) -->
+<!-- v3.21 | 2026-09-06 | 채팅 삭제 시 검토요청/팀원요청/업무요청도 함께 삭제 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -853,7 +853,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.19</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.21</p>
   </div>
 </div>
 
@@ -2101,7 +2101,7 @@ function listenMessages(roomId) {
   let firstLoad = true;
   listeners.msgs = onValue(msgsQuery, snap => {
     const msgs = [];
-    snap.forEach(c => msgs.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { msgs.push({ id: c.key, ...c.val() }); });
     if (firstLoad) {
       firstLoad = false;
       lastSeenTs[roomId] = msgs.length > 0 ? msgs[msgs.length-1].timestamp : Date.now();
@@ -2228,6 +2228,13 @@ function renderMessages(msgs) {
         if (!confirm(`"${(msg.text||'').slice(0,30)}..." 메세지를 삭제할까요?`)) return;
         try {
           await set(dbRef(db, `messages/${curRoomId}/${msg.id}`), null);
+          // 채팅 삭제 시 연결된 검토요청/팀원요청/업무요청도 함께 삭제
+          const linked = [
+            ...cachedReviews.filter(r => r.msgId === msg.id).map(r => `reviews/${r.id}`),
+            ...cachedTeamReviews.filter(r => r.msgId === msg.id).map(r => `teamReviews/${r.id}`),
+            ...cachedWorkRequests.filter(r => r.msgId === msg.id).map(r => `workRequests/${r.id}`)
+          ];
+          await Promise.all(linked.map(path => remove(dbRef(db, path))));
         } catch(err) { alert('삭제 실패: ' + err.message); }
       });
     });
@@ -2499,7 +2506,7 @@ function listenReviews() {
   // orderByChild 제거 → 클라이언트 정렬로 전체 데이터 수신 (indexOn 불필요)
   listeners.reviews = onValue(dbRef(db, 'reviews'), snap => {
     const all = [];
-    snap.forEach(c => all.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { all.push({ id: c.key, ...c.val() }); });
     renderReviews(all);
   }, err => {
     console.error('Reviews listener error:', err.message);
@@ -2564,7 +2571,7 @@ function listenWorkRequests() {
   if (listeners.workRequests) listeners.workRequests();
   listeners.workRequests = onValue(dbRef(db, 'workRequests'), snap => {
     const all = [];
-    snap.forEach(c => all.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { all.push({ id: c.key, ...c.val() }); });
     renderWorkRequests(all);
   }, err => {
     console.error('WorkRequests listener error:', err.message);
@@ -2579,7 +2586,7 @@ function listenTeamReviews() {
   if (listeners.teamReviews) listeners.teamReviews();
   listeners.teamReviews = onValue(dbRef(db, 'teamReviews'), snap => {
     const all = [];
-    snap.forEach(c => all.push({ id: c.key, ...c.val() }));
+    snap.forEach(c => { all.push({ id: c.key, ...c.val() }); });
     renderTeamReviews(all);
   }, err => {
     console.error('TeamReviews listener error:', err.message);
