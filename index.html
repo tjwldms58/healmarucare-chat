@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.25 | 2026-09-06 | 관리자 패널에 시스템 점검 모드 ON/OFF 토글 추가 -->
+<!-- v3.26 | 2026-09-06 | 새 채팅방 멤버 체크박스 시각 표시 개선 + 새 채팅방 목록 상단 표시 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -748,8 +748,14 @@
       border: 1.5px solid var(--border); border-radius: var(--rs); cursor: pointer;
       transition: all .15s; font-size: 13px;
     }
-    .mb-lbl input { width: 15px; height: 15px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
-    .mb-lbl:has(input:checked) { border-color: var(--primary); background: var(--primary-lt); }
+    .mb-check {
+      width: 16px; height: 16px; border: 1.5px solid var(--border); border-radius: 4px;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      background: var(--surface); transition: background .15s, border-color .15s;
+    }
+    .mb-check.checked { background: var(--primary); border-color: var(--primary); }
+    .mb-check.checked::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 700; line-height: 1; }
+    .mb-lbl.mb-selected { border-color: var(--primary); background: var(--primary-lt); }
     .mb-av {
       width: 24px; height: 24px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
@@ -853,7 +859,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.25</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.26</p>
   </div>
 </div>
 
@@ -2061,7 +2067,9 @@ function renderRooms() {
   const el = document.getElementById('rooms-scroll');
   const myRooms = Object.entries(allRooms)
     .filter(([,r]) => r.members && r.members[user.name])
-    .sort(([,a],[,b]) => (a.createdAt||0) - (b.createdAt||0));
+    // v3.26: 오래된 순 → 최신 순으로 변경. 기존 방식(오름차순)은 새로 만든
+    // 방이 목록 맨 아래에 추가되어, 기존 방이 많으면 스크롤해야만 보였음.
+    .sort(([,a],[,b]) => (b.createdAt||0) - (a.createdAt||0));
   if (!myRooms.length) {
     el.innerHTML = `<div class="no-rev" style="padding:24px">참여 중인 채팅방이 없습니다.<br><strong>+</strong> 버튼으로 만들어보세요!</div>`;
     return;
@@ -2865,14 +2873,16 @@ function showModal() {
   grid.innerHTML = '';
   USERS.filter(u => u !== user.name).forEach(u => {
     // v3.9: label→div 교체 (Electron label 이중 이벤트 버그 방지)
+    // v3.26: 네이티브 체크박스 대신 커스텀 체크 표시(.mb-check)로 교체 —
+    // 일부 Electron 환경에서 accent-color 기반 네이티브 체크 표시가 시각적으로
+    // 반영되지 않는 문제 방지 (선택 자체는 되지만 체크 아이콘이 안 보이는 문제)
     const item = document.createElement('div');
     item.className = 'mb-lbl';
+    item.dataset.user = u;
     item.style.cursor = 'pointer';
 
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.value = u;
-    cb.style.cssText = 'pointer-events:none;flex-shrink:0;width:15px;height:15px;accent-color:var(--primary)';
+    const check = document.createElement('span');
+    check.className = 'mb-check';
 
     const av = document.createElement('span');
     av.className = 'mb-av';
@@ -2885,15 +2895,15 @@ function showModal() {
     nm.textContent = dName(u);
     nm.style.pointerEvents = 'none';
 
-    item.appendChild(cb);
+    item.appendChild(check);
     item.appendChild(av);
     item.appendChild(nm);
 
-    // div 클릭 → 체크박스 수동 토글 (Electron 안정적 처리)
+    // div 클릭 → 커스텀 체크 상태 수동 토글
     item.addEventListener('click', () => {
-      cb.checked = !cb.checked;
-      item.style.borderColor = cb.checked ? 'var(--primary)' : '';
-      item.style.background  = cb.checked ? 'var(--primary-lt)' : '';
+      const isChecked = !item.classList.contains('mb-selected');
+      item.classList.toggle('mb-selected', isChecked);
+      check.classList.toggle('checked', isChecked);
     });
 
     grid.appendChild(item);
@@ -2906,13 +2916,17 @@ function showModal() {
 async function confirmCreate() {
   const name = document.getElementById('room-name-input').value.trim();
   if (!name) { document.getElementById('room-name-input').focus(); return; }
-  const extra = [...document.querySelectorAll('#member-grid input:checked')].map(cb => cb.value);
+  const extra = [...document.querySelectorAll('#member-grid .mb-lbl.mb-selected')].map(el => el.dataset.user);
   const btn = document.getElementById('confirm-btn');
   btn.disabled = true; btn.textContent = '만드는 중...';
   try {
     const id = await createRoom(name, extra);
     document.getElementById('modal').hidden = true;
-    setTimeout(() => selectRoom(id), 300);
+    setTimeout(() => {
+      selectRoom(id);
+      // 새로 만든 방이 목록에서 바로 보이도록 스크롤
+      document.querySelector(`.room-item[data-id="${id}"]`)?.scrollIntoView({ block: 'nearest' });
+    }, 300);
   } catch(e) {
     alert('채팅방 생성 실패: ' + e.message);
   } finally {
