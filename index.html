@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.24 | 2026-09-06 | 프로필 사진 업로드 오류 처리 강화 + 사용법 업데이트 -->
+<!-- v3.25 | 2026-09-06 | 관리자 패널에 시스템 점검 모드 ON/OFF 토글 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -853,7 +853,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.24</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.25</p>
   </div>
 </div>
 
@@ -971,6 +971,21 @@
       <hr style="border:none;border-top:1px solid var(--border-lt);margin:20px 0 16px">
       <div id="db-status" class="sp-status">○ 연결 중...</div>
       <div id="auth-status" class="sp-status" style="margin-top:3px">○ 인증 중...</div>
+
+      <!-- 시스템 점검 모드 -->
+      <hr style="border:none;border-top:1px solid var(--border-lt);margin:20px 0 16px">
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">시스템 점검 모드</p>
+      <div class="sp-row" style="margin-bottom:0">
+        <div>
+          <div class="sp-label">🔧 점검 화면 표시</div>
+          <div class="sp-sub" id="admin-maint-sub">현재 상태 확인 중...</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="admin-maint-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.6">켜면 모든 사용자에게 "시스템 점검 중" 화면이 표시되고 로그인/앱 접근이 차단됩니다. 작업이 끝나면 반드시 꺼주세요.</p>
 
       <!-- 관리자 권한 양도 -->
       <hr style="border:none;border-top:1px solid var(--border-lt);margin:20px 0 16px">
@@ -3160,8 +3175,45 @@ document.getElementById('admin-pwd-confirm-btn').addEventListener('click', () =>
   renderAdminUserList();
   renderRoleList();
   renderTransferSection();
+  renderMaintenanceToggle();
   document.getElementById('admin-panel-modal').hidden = false;
 });
+
+// ──────────────────────────────────────────────────────
+// 시스템 점검 모드 토글 (관리자 패널)
+// ──────────────────────────────────────────────────────
+let _maintToggleBinding = false; // change 리스너 중복 등록 방지
+async function renderMaintenanceToggle() {
+  const toggle = document.getElementById('admin-maint-toggle');
+  const sub    = document.getElementById('admin-maint-sub');
+  if (!toggle || !db) return;
+  try {
+    const snap = await get(dbRef(db, 'config/maintenance'));
+    const isOn = snap.val() === true;
+    toggle.checked = isOn;
+    sub.textContent = isOn ? '현재 점검 중 (모든 사용자 접근 차단됨)' : '현재 정상 운영 중';
+  } catch(e) {
+    sub.textContent = '상태를 불러올 수 없습니다: ' + (e?.message || '');
+  }
+
+  if (!_maintToggleBinding) {
+    _maintToggleBinding = true;
+    toggle.addEventListener('change', async () => {
+      const on = toggle.checked;
+      toggle.disabled = true;
+      try {
+        await set(dbRef(db, 'config/maintenance'), on);
+        sub.textContent = on ? '현재 점검 중 (모든 사용자 접근 차단됨)' : '현재 정상 운영 중';
+        showToast(on ? '🔧 점검 모드를 켰습니다.' : '✅ 점검 모드를 껐습니다.', 3000, on ? '#e55' : '#2AAD8F');
+      } catch(e) {
+        toggle.checked = !on; // 실패 시 원복
+        showToast('⚠️ 점검 모드 변경 실패: ' + (e?.message || '알 수 없는 오류'), 5000, '#e55');
+      } finally {
+        toggle.disabled = false;
+      }
+    });
+  }
+}
 document.getElementById('admin-pwd-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('admin-pwd-confirm-btn').click();
 });
