@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.37 | 2026-09-08 | Electron App Check 디버그 토큰 고정값으로 변경 (IndexedDB 미지원 대응) -->
+<!-- v3.38 | 2026-09-08 | 채팅방 빈 스냅샷 false alarm 무시 처리 (방 목록 누락 버그 수정) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -853,7 +853,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.37</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.38</p>
   </div>
 </div>
 
@@ -1978,10 +1978,8 @@ function listenRooms() {
       const roomRef = dbRef(db, `rooms/${rid}`);
       roomListeners[rid] = onValue(roomRef, roomSnap => {
         if (!roomSnap.exists()) {
-          delete allRooms[rid];
-          // curRoomId 리셋은 userRooms diff(② 제거된 방)에서만 처리
-          // Firebase 캐시 없을 때 빈 스냅샷 false alarm 방지
-          renderRooms();
+          // 빈 스냅샷은 무시 (false alarm 방지)
+          // 방 삭제는 userRooms diff(② 단계)에서만 처리
           return;
         }
         const prev    = allRooms[rid];
