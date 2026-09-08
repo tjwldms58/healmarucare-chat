@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.39 | 2026-09-08 | 채팅방 목록 디버그 로그 추가 (임시) -->
+<!-- v3.40 | 2026-09-08 | App Check 제거 (채팅방 목록 정상화) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -853,7 +853,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.39</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.40</p>
   </div>
 </div>
 
@@ -1328,8 +1328,6 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 import { getAuth, signInAnonymously, onAuthStateChanged }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { initializeAppCheck, ReCaptchaV3Provider }
-       from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app-check.js";
 
 // ──────────────────────────────────────────────────────
 // FIREBASE CONFIG
@@ -1345,13 +1343,6 @@ const firebaseConfig = {
 };
 
 // ──────────────────────────────────────────────────────
-// APP CHECK (Firebase 보안 강화 - 앱 외부 직접 접근 차단)
-// ──────────────────────────────────────────────────────
-// Electron 환경: 디버그 토큰 사용 (콘솔에 출력되는 토큰을 Firebase Console에 등록 필요)
-if (/electron/i.test(navigator.userAgent)) {
-  self.FIREBASE_APPCHECK_DEBUG_TOKEN = 'b891e057-6a9b-4dce-9ca8-4e0694ca9665';
-}
-
 // ──────────────────────────────────────────────────────
 // CONSTANTS
 // ──────────────────────────────────────────────────────
@@ -1856,11 +1847,6 @@ function renderRoleList() {
 function initFirebaseEarly() {
   try {
     const app = initializeApp(firebaseConfig);
-    // App Check 초기화 (웹: reCAPTCHA v3 / Electron: 디버그 토큰 자동 처리)
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider('6LdcZLAtAAAAAEnEMf0eWBh1eDwYch7tdN4t2qfO'),
-      isTokenAutoRefreshEnabled: true
-    });
     db      = getDatabase(app);
     storage = getStorage(app);
     auth    = getAuth(app);
