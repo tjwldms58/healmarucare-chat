@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.38 | 2026-09-08 | 채팅방 빈 스냅샷 false alarm 무시 처리 (방 목록 누락 버그 수정) -->
+<!-- v3.39 | 2026-09-08 | 채팅방 목록 디버그 로그 추가 (임시) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -853,7 +853,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.38</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.39</p>
   </div>
 </div>
 
@@ -1971,12 +1971,14 @@ function listenRooms() {
   const unsubUserRooms = onValue(userRoomsRef, snap => {
     const currentRoomIds = new Set();
     if (snap.exists()) snap.forEach(child => currentRoomIds.add(child.key));
+    console.log('[DEBUG] userRooms IDs:', [...currentRoomIds]);
 
     // ① 새로 추가된 방 → onValue 구독
     currentRoomIds.forEach(rid => {
       if (roomListeners[rid]) return; // 이미 구독 중
       const roomRef = dbRef(db, `rooms/${rid}`);
       roomListeners[rid] = onValue(roomRef, roomSnap => {
+        console.log('[DEBUG] room snap:', rid, 'exists:', roomSnap.exists(), roomSnap.val());
         if (!roomSnap.exists()) {
           // 빈 스냅샷은 무시 (false alarm 방지)
           // 방 삭제는 userRooms diff(② 단계)에서만 처리
