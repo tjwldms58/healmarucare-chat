@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.47 | 2026-09-14 | 안드로이드 앱(네이티브)에서 채팅에 첨부된 파일(문서)이 안 열리던 문제 수정 - 네이티브 앱에서는 target="_blank" 대신 일반 링크로 열어 시스템이 처리하도록 변경 -->
+<!-- v3.48 | 2026-09-14 | PC에서도 채팅방 목록과 채팅 화면을 나란히 보여주지 않고, 모바일처럼 목록→(클릭)→채팅 한 화면씩 전환하도록 변경. 채팅 화면 상단에 ← 뒤로가기 버튼 추가 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -962,6 +962,19 @@
          실제로 좁아진 건 뷰포트가 아니라 #app 내부이므로 여기서도 말풍선 폭을 넓혀줘야 한다. */
       #msgs { padding: 12px 12px; }
       .msg-col { max-width: 84%; }
+
+      /* v3.48: PC도 폭이 500px로 좁아진 이상, 방목록+채팅을 나란히 보여줄 자리가 없다.
+         모바일과 동일하게 "방목록 → (클릭) → 채팅" 한 번에 한 화면씩 전환하는 방식으로 통일. */
+      #rooms-panel { width: 100%; }
+      #right.mobile-chat-active #rooms-panel { display: none; }
+      #right:not(.mobile-chat-active) #chat { display: none; }
+      .mobile-back-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; flex-shrink: 0;
+        background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer;
+        border-radius: 7px; margin-right: 2px;
+      }
+      .mobile-back-btn:hover { background: var(--sidebar); }
     }
   </style>
 </head>
@@ -996,7 +1009,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.47</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.48</p>
   </div>
 </div>
 
@@ -2413,11 +2426,10 @@ function selectRoom(id) {
   listenAnnouncement(id);
   // 채팅 탭으로 이동
   switchTab('chat');
-  // 모바일 화면에서는 방을 선택하면 채팅 화면으로 전환 (v3.37)
-  if (isMobileLayout()) {
-    document.getElementById('right').classList.add('mobile-chat-active');
-    enterMobileChatHistory(); // v3.38: 뒤로가기(제스처/버튼)로 방목록에 돌아올 수 있도록 히스토리 등록
-  }
+  // 방을 선택하면 채팅 화면으로 전환 (v3.37 모바일 → v3.48: PC도 항상 폭이 좁아
+  // (max-width:500px) 방목록+채팅을 나란히 보여줄 자리가 없으므로 폭에 상관없이 적용)
+  document.getElementById('right').classList.add('mobile-chat-active');
+  enterMobileChatHistory(); // v3.38: 뒤로가기(제스처/버튼)로 방목록에 돌아올 수 있도록 히스토리 등록
   closeLeftDrawer();
   // 입력창 포커스 (Electron 환경에서 포커스 보장)
   setTimeout(() => {
