@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.55 | 2026-09-14 | 로그인 화면 부제목 "사내 소통 플랫폼 · 대화의 장" → "힐마루케어 사내메신저" 로 변경 -->
+<!-- v3.56 | 2026-09-14 | v3.54의 부작용(등록 사용자 명단이 기본값 6명만 보이던 문제) 수정 — 로그인 전에 미리 익명 인증을 해둬서 설정값(config/*) 실시간 감시가 permission_denied로 막히지 않게 함. 데이터 자체는 항상 그대로였고 화면에 불러오는 것만 실패했던 것 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -1035,7 +1035,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.55</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.56</p>
   </div>
 </div>
 
@@ -2139,7 +2139,7 @@ function renderRoleList() {
 
 // ──────────────────────────────────────────────────────
 // 1단계: 페이지 로드 시 Firebase 연결 + 사용자 목록 로딩
-function initFirebaseEarly() {
+async function initFirebaseEarly() {
   try {
     const app = initializeApp(firebaseConfig);
     db      = getDatabase(app);
@@ -2154,6 +2154,23 @@ function initFirebaseEarly() {
     } catch (e) {
       auth = getAuth(app); // 이미 초기화되어 있는 등 예외적인 경우 대비
     }
+
+    // v3.56: DB 규칙상 config/* 등은 로그인(익명 인증) 전엔 읽을 수 없음.
+    // v3.54 이전엔 IndexedDB에 남아있던 예전 익명 인증이 재사용되면서 우연히
+    // 통과됐지만(그래서 "이전엔 사용자 명단이 다 떴다"), v3.54에서 메모리 기반
+    // 인증으로 바꾸면서 그 우연한 재사용이 사라져 아래 실시간 감시들이 전부
+    // permission_denied로 막혀버림(→ 등록 사용자 목록이 기본값 6명으로만 보이던 원인).
+    // 그래서 사람이 이름/비밀번호로 로그인하기 전에, 여기서 먼저 "인증되어 있는
+    // 상태"만 미리 만들어두고 아래 실시간 감시를 등록한다.
+    try {
+      await Promise.race([
+        signInAnonymously(auth),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('초기 인증 타임아웃(8초)')), 8000))
+      ]);
+    } catch (e) {
+      console.warn('초기 익명 인증 실패 — 설정값 로딩이 일부 안 될 수 있음:', e);
+    }
+
     loadUsersFromFirebase(); // 로그인 전에 USERS 로딩
 
     // 비활성화 사용자 실시간 감시
