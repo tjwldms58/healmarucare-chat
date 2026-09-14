@@ -1,11 +1,17 @@
 <!DOCTYPE html>
-<!-- v3.35 | 2026-09-06 | 멤버 수 많은 방(예: 간호팀방)에서 멤버 칩이 여러 줄로 줄바꿈되며 헤더가 커져 입력창이 화면 밖으로 밀려 클릭 불가하던 CSS 버그 수정 (#msgs min-height:0 추가) -->
+<!-- v3.40 | 2026-09-14 | 관리자패널에 "커스텀 태그 관리" 추가: @부대표님/@팀원/@경영지원 외 임의의 @태그를 관리자가 새로 등록하면 검토요청 패널(PC/모바일 모두)에 해당 태그 전용 목록(요청/완료/파일)이 자동 생성됨. 태그별로 볼 수 있는 사람을 관리자가 직접 선택. 기존 3개 태그 로직/데이터는 전혀 건드리지 않음(customTags/customReviews 경로로 완전 분리) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>대화의 장 · 힐마루케어</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- PWA / 앱 아이콘 (v3.36 배포 스캐폴딩에서 추가) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1A6B8F">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
   <style>
     /* ============================================================
        TOKEN SYSTEM
@@ -79,7 +85,7 @@
     }
     .maintenance-card {
       background: var(--surface); border-radius: 20px;
-      padding: 50px 40px; width: 380px; text-align: center;
+      padding: 50px 40px; width: 380px; max-width: 92vw; text-align: center;
       box-shadow: var(--shadow-lg);
     }
     .mc-icon { font-size: 52px; margin-bottom: 20px; }
@@ -102,7 +108,7 @@
     }
     .login-card {
       background: var(--surface); border-radius: 20px;
-      padding: 44px 40px; width: 400px;
+      padding: 44px 40px; width: 400px; max-width: 92vw;
       box-shadow: var(--shadow-lg);
     }
     .login-brand { text-align: center; margin-bottom: 36px; }
@@ -156,40 +162,41 @@
       background: #ffffff; display: flex; align-items: center; justify-content: center; overflow: hidden;
     }
     .h-logo img { width: 100%; height: 100%; object-fit: contain; }
-    .h-name  { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
-    .h-right { display: flex; align-items: center; gap: 10px; }
+    .h-name  { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.3px; white-space: nowrap; }
+    .h-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .h-avatar {
       width: 32px; height: 32px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
     }
     .h-uname {
-      font-size: 13px; font-weight: 500; color: #fff;
+      font-size: 13px; font-weight: 500; color: #fff; white-space: nowrap; flex-shrink: 0;
       background: rgba(255,255,255,.15); padding: 5px 12px; border-radius: 20px;
     }
-    .h-db { font-size: 11px; color: rgba(255,255,255,.6); background: rgba(255,255,255,.1); padding: 4px 10px; border-radius: 10px; }
+    .h-db { font-size: 11px; color: rgba(255,255,255,.6); background: rgba(255,255,255,.1); padding: 4px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
     .h-db.ok { color: #7EEBB8; }
     .btn-logout {
       background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
-      color: #fff; padding: 5px 12px; border-radius: 20px;
+      color: #fff; padding: 5px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
       font-size: 12px; font-family: inherit; cursor: pointer; transition: background .15s;
     }
     .btn-logout:hover { background: rgba(255,255,255,.25); }
     .btn-admin {
       background: rgba(255,255,255,.15); border: none; border-radius: var(--rx);
       color: #fff; font-size: 16px; padding: 6px 10px; cursor: pointer; transition: background .15s;
+      flex-shrink: 0;
     }
     .btn-admin:hover { background: rgba(255,255,255,.3); }
     .btn-edit-name {
       background: none; border: none; color: rgba(255,255,255,.75);
       font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 6px;
-      transition: background .15s; line-height: 1;
+      transition: background .15s; line-height: 1; flex-shrink: 0;
     }
     .btn-edit-name:hover { background: rgba(255,255,255,.2); color: #fff; }
     .btn-settings {
       background: none; border: none; color: rgba(255,255,255,.75);
       font-size: 17px; cursor: pointer; padding: 4px 7px; border-radius: 6px;
-      transition: background .15s; line-height: 1;
+      transition: background .15s; line-height: 1; flex-shrink: 0;
     }
     .btn-settings:hover { background: rgba(255,255,255,.2); color: #fff; }
 
@@ -834,6 +841,92 @@
       cursor: zoom-out;
     }
     #lightbox img { max-width: 95vw; max-height: 95vh; object-fit: contain; }
+
+    /* ============================================================
+       MOBILE LAYOUT (v3.37) — 좁은 화면(휴대폰/세로 태블릿)용 대응.
+       데스크톱 3열 레이아웃(검토패널 260px + 방목록 200px + 채팅)은 그대로 두고,
+       이 너비 이하에서만 한 화면에 한 패널씩 보이도록 전환한다.
+    ============================================================ */
+    #left-backdrop { display: none; }
+    .mobile-left-toggle, .mobile-back-btn { display: none; }
+    #nav-review { display: none; }
+
+    @media (max-width: 880px) {
+      /* 헤더: 여백/간격을 줄이고, 넘칠 경우를 대비해 가로 스크롤을 허용 */
+      header { padding: 0 12px; overflow-x: auto; }
+      .h-brand { gap: 6px; flex-shrink: 0; }
+      .h-name { display: none; } /* 로고로 브랜드 식별 가능하므로 좁은 화면에서는 텍스트 생략 */
+      .h-right { gap: 6px; }
+      .h-uname { padding: 5px 9px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
+      .btn-logout { padding: 5px 9px; font-size: 11px; }
+      .btn-settings, .btn-admin, .btn-edit-name { padding: 4px 5px; }
+
+      /* 검토요청/팀원요청 왼쪽 패널 → 오프캔버스 서랍으로 전환 */
+      #left {
+        position: fixed; top: 54px; left: 0; bottom: 0; z-index: 400;
+        width: min(82vw, 320px);
+        transform: translateX(-100%);
+        transition: transform .22s ease;
+        box-shadow: var(--shadow-lg);
+      }
+      #left.open { transform: translateX(0); }
+      #left-backdrop.show {
+        display: block;
+        position: fixed; inset: 54px 0 0 0; background: rgba(0,0,0,.35); z-index: 390;
+      }
+      .mobile-left-toggle {
+        display: flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; flex-shrink: 0; margin-right: 4px;
+        background: var(--primary-lt); border: none; border-radius: 7px;
+        color: var(--primary); font-size: 15px; cursor: pointer;
+      }
+
+      /* 방 목록 ↔ 채팅: 한 번에 하나씩만 표시 */
+      #rooms-panel { width: 100%; }
+      #right.mobile-chat-active #rooms-panel { display: none; }
+      #right:not(.mobile-chat-active) #chat { display: none; }
+      .mobile-back-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; flex-shrink: 0;
+        background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer;
+        border-radius: 7px; margin-right: 2px;
+      }
+      .mobile-back-btn:hover { background: var(--sidebar); }
+
+      /* 말풍선: 좁은 화면에서는 62%로 제한하면 10자 안팎에서도 줄바꿈이 되어버리므로 여유를 더 줌 */
+      #msgs { padding: 12px 12px; }
+      .msg-col { max-width: 84%; }
+
+      /* 하단 네비게이션: 모바일에서는 커뮤니티 대신 검토요청을 노출 (v3.38) */
+      #nav-community { display: none; }
+      #nav-review { display: flex; }
+    }
+
+    /* ============================================================
+       PC 좌측 아이콘 레일 (v3.39) — 카카오톡 스타일로 하단 탭 대신 좌측에 아이콘 3개.
+       모바일 폭에서는 기존 하단 탭(#bottom-nav)을 그대로 사용한다.
+    ============================================================ */
+    #side-rail { display: none; }
+    .rail-btn {
+      width: 44px; height: 44px; flex-shrink: 0;
+      border: none; background: none; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 21px; cursor: pointer; color: var(--text-muted);
+      transition: background .15s, color .15s;
+    }
+    .rail-btn:hover  { background: var(--primary-lt); }
+    .rail-btn.active { background: var(--primary-lt); color: var(--primary); }
+
+    @media (min-width: 881px) {
+      #side-rail {
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        position: fixed; top: 0; left: 0; bottom: 0; width: 56px;
+        background: var(--sidebar); border-right: 1px solid var(--border);
+        padding-top: 12px; z-index: 50;
+      }
+      header, #main-tabs { margin-left: 56px; }
+      #bottom-nav { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -867,7 +960,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.35</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.40</p>
   </div>
 </div>
 
@@ -974,6 +1067,22 @@
           <button class="btn-primary" id="admin-add-user-btn" style="width:auto;padding:10px 18px;white-space:nowrap">추가</button>
         </div>
         <p id="admin-add-err" class="login-err" hidden style="margin-top:8px;margin-bottom:0"></p>
+      </div>
+
+      <!-- 커스텀 태그 관리 -->
+      <hr style="border:none;border-top:1px solid var(--border-lt);margin:20px 0 16px">
+      <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">커스텀 태그 관리</p>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+        @부대표님/@팀원/@경영지원 외에 새로운 @태그를 추가하면 검토요청 패널에 해당 태그 전용 목록이 자동으로 생성됩니다. 태그별로 볼 수 있는 사람을 직접 선택하세요.
+      </div>
+      <div id="admin-custom-tag-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+      <div class="field" style="margin-bottom:20px">
+        <label>새 태그 추가 (@로 시작)</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="admin-new-tag-input" placeholder="예: @혼수부서" style="flex:1">
+          <button class="btn-primary" id="admin-add-tag-btn" style="width:auto;padding:10px 18px;white-space:nowrap">추가</button>
+        </div>
+        <p id="admin-add-tag-err" class="login-err" hidden style="margin-top:8px;margin-bottom:0"></p>
       </div>
 
       <!-- 직책 관리 -->
@@ -1125,6 +1234,13 @@
     </div>
   </header>
 
+  <!-- PC 전용: 좌측 아이콘 레일 (v3.39) — 넓은 화면에서 하단 탭 대신 카카오톡 스타일 좌측 아이콘 3개로 표시 -->
+  <nav id="side-rail">
+    <button class="rail-btn" id="rail-list" title="목록">👥</button>
+    <button class="rail-btn active" id="rail-chat" title="채팅">💬</button>
+    <button class="rail-btn" id="rail-review" title="검토요청">📌</button>
+  </nav>
+
   <!-- Main Tab Panels -->
   <div id="main-tabs">
 
@@ -1140,6 +1256,8 @@
 
     <!-- ── 채팅 탭 ── -->
     <div id="tab-chat" class="tab-panel">
+      <!-- 모바일 전용: 왼쪽 검토패널 서랍 배경 (v3.37) -->
+      <div id="left-backdrop" onclick="closeLeftDrawer()"></div>
       <!-- Left: 검토현황 / 업무요청 탭 (조건부) -->
       <div id="left">
         <!-- 탭 버튼 -->
@@ -1263,6 +1381,7 @@
         <!-- Room list -->
         <div id="rooms-panel">
           <div class="rooms-hdr">
+            <button class="mobile-left-toggle" id="mobile-left-toggle-btn" onclick="toggleLeftDrawer()" title="검토요청/팀원요청">☰</button>
             <span class="rooms-ttl">채팅방 목록</span>
             <button class="btn-add-room" id="add-room-btn" title="새 채팅방">+</button>
           </div>
@@ -1274,6 +1393,7 @@
         <!-- Chat area -->
         <div id="chat">
           <div id="chat-hdr" hidden>
+            <button class="mobile-back-btn" id="mobile-back-btn" onclick="backToRoomsList()" title="채팅방 목록으로">←</button>
             <div>
               <div id="chat-room-name"></div>
               <div class="m-chips" id="member-chips"></div>
@@ -1357,6 +1477,11 @@
       <span class="nav-icon">📋</span>
       <span class="nav-label">커뮤니티</span>
     </button>
+    <!-- 모바일 전용: 검토요청/팀원요청 패널을 하단 탭에서 바로 열기 (v3.38, 좁은 화면에서만 보이고 커뮤니티 자리를 대신함) -->
+    <button class="nav-btn" id="nav-review">
+      <span class="nav-icon">📌</span>
+      <span class="nav-label">검토요청</span>
+    </button>
   </nav>
 </div><!-- /#app -->
 
@@ -1396,6 +1521,13 @@ const ADMIN_PWD    = 'rudckf@8899';
 let   reviewUsers       = ['민경필','차규은','이청용','서지은']; // 검토요청 탭 접근 권한
 let   teamReviewUsers   = ['민경필','차규은','이청용','서지은']; // 팀원요청 탭 접근 권한
 let   workRequestUsers  = ['강수희','민경필']; // 업무요청(경영) 탭 접근 권한
+let   customTags        = {}; // config/customTags: { tagKey: { label, users:[] } } — 관리자가 추가한 커스텀 @태그
+const CUSTOM_TAG_PALETTE = ['#607D8B','#8E44AD','#16A085','#D35400','#2980B9','#C0392B','#7F8C8D','#E67E22'];
+function customTagColor(tagKey) {
+  const keys = Object.keys(customTags);
+  const idx  = keys.indexOf(tagKey);
+  return CUSTOM_TAG_PALETTE[idx >= 0 ? idx % CUSTOM_TAG_PALETTE.length : 0];
+}
 const COLORS = {
   '민경필':'#E74C3C','차규은':'#9B59B6','이청용':'#27AE60',
   '서지은':'#E67E22','허수빈':'#2980B9','강수희':'#1ABC9C'
@@ -1428,6 +1560,8 @@ let disabledUsers    = {};    // 비활성화된 사용자
 let photoUrls        = {};    // 프로필 사진 URL
 let helpContent      = null;  // 사용법 안내 내용
 let announcementListener = null; // 공지 리스너
+let cachedCustomReviews = {};    // { tagKey: [...] } — 커스텀 태그별 검토현황 캐시
+let customTagListeners  = {};    // { tagKey: unsubscribeFn } — 커스텀 태그별 Firebase 리스너
 
 // ──────────────────────────────────────────────────────
 // UTILS
@@ -1444,10 +1578,17 @@ function showToast(msg, duration = 3000, color = 'var(--primary)') {
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, duration);
 }
 function tagHL(text) {
-  return esc(text)
+  let out = esc(text)
     .replace(/@부대표님/g, '<span class="tag-hl">@부대표님</span>')
     .replace(/@팀원/g, '<span class="tag-team">@팀원</span>')
     .replace(/@경영지원/g, '<span style="display:inline-block;background:#27AE60;color:#fff;border-radius:4px;padding:0 5px;font-size:12px;font-weight:700">@경영지원</span>');
+  Object.entries(customTags).forEach(([tagKey, tag]) => {
+    if (!tag?.label) return;
+    const escLabel = esc(tag.label);
+    const color = customTagColor(tagKey);
+    out = out.split(escLabel).join(`<span style="display:inline-block;background:${color};color:#fff;border-radius:4px;padding:0 5px;font-size:12px;font-weight:700">${escLabel}</span>`);
+  });
+  return out;
 }
 function ts2time(ts) {
   if (!ts) return '';
@@ -1509,12 +1650,25 @@ function switchTab(tab) {
     document.getElementById(`tab-${t}`).hidden = (t !== tab);
     document.getElementById(`nav-${t}`).classList.toggle('active', t === tab);
   });
+  // v3.39: PC 좌측 아이콘 레일도 함께 활성 표시 동기화 (검토요청은 채팅 탭 안에 항상 존재하는 패널이라 별도 active 표시 없음)
+  document.getElementById('rail-list')?.classList.toggle('active', tab === 'list');
+  document.getElementById('rail-chat')?.classList.toggle('active', tab === 'chat');
   if (tab === 'list') renderMemberList();
   if (tab === 'community') { /* already listening */ }
+  if (tab !== 'chat') closeLeftDrawer(); // v3.37: 채팅 탭을 벗어나면 모바일 서랍 닫기
 }
 document.getElementById('nav-list').onclick      = () => switchTab('list');
 document.getElementById('nav-chat').onclick      = () => switchTab('chat');
 document.getElementById('nav-community').onclick = () => switchTab('community');
+// v3.38: 모바일 하단 탭의 "검토요청" — 채팅 탭으로 이동한 뒤 왼쪽 검토패널 서랍을 연다
+document.getElementById('nav-review').onclick = () => {
+  switchTab('chat');
+  openLeftDrawer();
+};
+// v3.39: PC 좌측 아이콘 레일 — 검토패널은 PC에서 항상 열려있는 고정 사이드바이므로 채팅 탭으로 이동만 하면 됨
+document.getElementById('rail-list').onclick   = () => switchTab('list');
+document.getElementById('rail-chat').onclick   = () => switchTab('chat');
+document.getElementById('rail-review').onclick = () => switchTab('chat');
 
 // ──────────────────────────────────────────────────────
 // MEMBER LIST
@@ -1927,6 +2081,16 @@ function initFirebaseEarly() {
       if (user) applyPanelVisibility();
     });
 
+    // 커스텀 태그 (관리자가 추가한 @태그) 실시간 감시 — 탭/패널 자동 생성
+    onValue(dbRef(db, 'config/customTags'), snap => {
+      customTags = snap.val() || {};
+      renderCustomTagUI();
+      renderCustomTagAdminList();
+      if (user) applyPanelVisibility();
+    }, err => {
+      console.error('CustomTags config listener error:', err.message);
+    });
+
     // 점검 모드 실시간 감시 (config/maintenance = true 이면 점검 화면 표시)
     let _prevMaintState = null;
     onValue(dbRef(db, 'config/maintenance'), snap => {
@@ -1979,6 +2143,7 @@ function initFirebase() {
     listenFiles();
     listenCommunity();
     listenPhotoUrls();
+    Object.keys(customTags).forEach(ensureCustomTagListener);
   } catch(e) {
     const _dbEl = document.getElementById('db-status'); if(_dbEl) { _dbEl.textContent='✗ 연결 오류'; _dbEl.className='sp-status'; }
     console.error('Firebase init error:', e);
@@ -2120,6 +2285,62 @@ function renderRooms() {
   });
 }
 
+// ──────────────────────────────────────────────────────
+// 모바일 레이아웃 전환 (v3.37) — 좁은 화면에서 검토패널/방목록/채팅을 한 번에 하나씩만 표시
+// ──────────────────────────────────────────────────────
+function isMobileLayout() { return window.matchMedia('(max-width: 880px)').matches; }
+// 하단 네비게이션의 활성 표시를 서랍 열림 상태와 맞춤 (v3.38)
+function updateMobileNavActive() {
+  const drawerOpen = document.getElementById('left').classList.contains('open');
+  const navReview = document.getElementById('nav-review');
+  if (navReview) navReview.classList.toggle('active', drawerOpen);
+  ['list','chat','community'].forEach(t => {
+    const btn = document.getElementById(`nav-${t}`);
+    if (btn) btn.classList.toggle('active', !drawerOpen && t === curTab);
+  });
+}
+function openLeftDrawer() {
+  document.getElementById('left').classList.add('open');
+  document.getElementById('left-backdrop').classList.add('show');
+  updateMobileNavActive();
+}
+function toggleLeftDrawer() {
+  const left = document.getElementById('left');
+  const bd   = document.getElementById('left-backdrop');
+  const opening = !left.classList.contains('open');
+  left.classList.toggle('open', opening);
+  bd.classList.toggle('show', opening);
+  updateMobileNavActive();
+}
+function closeLeftDrawer() {
+  document.getElementById('left').classList.remove('open');
+  document.getElementById('left-backdrop').classList.remove('show');
+  updateMobileNavActive();
+}
+
+// 모바일에서 채팅방 진입 시 히스토리를 하나 쌓아, 휴대폰의 뒤로가기(제스처/버튼)로도
+// 방목록으로 돌아올 수 있게 함. (v3.38: "채팅방에 들어가면 뒤로가기가 안 된다" 문제 수정)
+let mobileChatHistoryActive = false;
+function enterMobileChatHistory() {
+  if (!mobileChatHistoryActive) {
+    history.pushState({ mobileChat: true }, '');
+    mobileChatHistoryActive = true;
+  }
+}
+function exitMobileChatUI() {
+  document.getElementById('right').classList.remove('mobile-chat-active');
+  mobileChatHistoryActive = false;
+}
+window.addEventListener('popstate', () => {
+  if (mobileChatHistoryActive) exitMobileChatUI();
+});
+function backToRoomsList() {
+  // history.back()을 호출하면 위 popstate 핸들러가 exitMobileChatUI()를 실행한다.
+  // (뒤로가기 버튼 탭과 휴대폰 자체 뒤로가기가 항상 같은 경로를 타도록 통일)
+  if (mobileChatHistoryActive) history.back();
+  else exitMobileChatUI();
+}
+
 function selectRoom(id) {
   curRoomId = id;
   curRoom   = allRooms[id] || null;
@@ -2135,6 +2356,12 @@ function selectRoom(id) {
   listenAnnouncement(id);
   // 채팅 탭으로 이동
   switchTab('chat');
+  // 모바일 화면에서는 방을 선택하면 채팅 화면으로 전환 (v3.37)
+  if (isMobileLayout()) {
+    document.getElementById('right').classList.add('mobile-chat-active');
+    enterMobileChatHistory(); // v3.38: 뒤로가기(제스처/버튼)로 방목록에 돌아올 수 있도록 히스토리 등록
+  }
+  closeLeftDrawer();
   // 입력창 포커스 (Electron 환경에서 포커스 보장)
   setTimeout(() => {
     const inp = document.getElementById('msg-input');
@@ -2204,6 +2431,8 @@ function resetChatView() {
   document.getElementById('input-area').hidden = true;
   document.getElementById('msgs').innerHTML = '<div class="chat-empty"><div style="font-size:36px">💬</div><div style="font-size:13px;color:var(--text-sec)">채팅방을 선택하세요</div></div>';
   document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('right').classList.remove('mobile-chat-active'); // v3.37: 모바일에서 방목록으로 복귀
+  mobileChatHistoryActive = false; // v3.38: 방이 사라진 경우이므로 history.back()을 부르지 않고 상태만 정리
 }
 
 // ──────────────────────────────────────────────────────
@@ -2454,6 +2683,21 @@ async function sendMessage() {
       }
     }
 
+    // 커스텀 태그 push (관리자가 추가한 @태그 → customReviews/{tagKey}) — 태그별 별도 try-catch
+    for (const [tagKey, tag] of Object.entries(customTags)) {
+      if (!tag?.label || !text.includes(tag.label)) continue;
+      try {
+        await push(dbRef(db, `customReviews/${tagKey}`), {
+          msgId: msgRef.key, text, roomId: curRoomId,
+          roomName: curRoom?.name || '', userName: user.name,
+          timestamp, checked: false
+        });
+      } catch(customErr) {
+        console.error(`CustomReviews(${tagKey}) push error:`, customErr.message);
+        showToast(`⚠️ ${tag.label} 등록 실패 (Firebase 권한 확인 필요): ` + customErr.code, 5000, '#e55');
+      }
+    }
+
     input.value = '';
     input.style.height = 'auto';
     document.getElementById('msgs').scrollTop = 9999999;
@@ -2577,7 +2821,8 @@ function listenFiles() {
 
 function renderFilesGallery(files) {
   cachedFiles = files;
-  if (detailModalType === 'files' || detailModalType === 'team-files' || detailModalType === 'work-files') renderDetailModal();
+  if (detailModalType === 'files' || detailModalType === 'team-files' || detailModalType === 'work-files' ||
+      (typeof detailModalType === 'string' && detailModalType.startsWith('custom:') && detailModalType.endsWith(':files'))) renderDetailModal();
   // 검토요청 탭 파일 뱃지
   const el    = document.getElementById('files-list');
   const badge = document.getElementById('files-badge');
@@ -2588,6 +2833,11 @@ function renderFilesGallery(files) {
   // 경영지원 탭 파일 뱃지
   const workFilesBadge = document.getElementById('work-files-badge');
   if (workFilesBadge) { workFilesBadge.textContent = files.length; workFilesBadge.className = 'badge blue' + (files.length ? '' : ' empty'); }
+  // 커스텀 태그 탭 파일 뱃지
+  Object.keys(customTags).forEach(tagKey => {
+    const b = document.getElementById(`custom-${tagKey}-files-badge`);
+    if (b) { b.textContent = files.length; b.className = 'badge blue' + (files.length ? '' : ' empty'); }
+  });
   // 패널 내 파일 미리보기 렌더링 헬퍼
   function renderFilesIntoEl(el) {
     if (!el) return;
@@ -2623,6 +2873,9 @@ function renderFilesGallery(files) {
   renderFilesIntoEl(document.getElementById('files-list'));
   renderFilesIntoEl(document.getElementById('team-files-list'));
   renderFilesIntoEl(document.getElementById('work-files-list'));
+  Object.keys(customTags).forEach(tagKey => {
+    renderFilesIntoEl(document.getElementById(`custom-${tagKey}-files-list`));
+  });
 }
 
 // ──────────────────────────────────────────────────────
@@ -2867,6 +3120,150 @@ function makeWorkItem(r, isDone) {
   });
   if (isDone && canDelete(r)) el.appendChild(makeDelBtn(`workRequests/${r.id}`));
   return el;
+}
+
+// ──────────────────────────────────────────────────────
+// CUSTOM TAGS (관리자가 추가한 임의의 @태그) — 기존 3개 태그(@부대표님/@팀원/@경영지원)를
+// 절대 건드리지 않고, 완전히 별도 경로(customReviews/{tagKey})로 동작하는 추가 기능
+// ──────────────────────────────────────────────────────
+function ensureCustomTagListener(tagKey) {
+  if (!db || customTagListeners[tagKey]) return;
+  customTagListeners[tagKey] = onValue(dbRef(db, `customReviews/${tagKey}`), snap => {
+    const all = [];
+    snap.forEach(c => all.push({ id: c.key, ...c.val() }));
+    renderCustomReviews(tagKey, all);
+  }, err => {
+    console.error(`CustomReviews(${tagKey}) listener error:`, err.message);
+  });
+}
+
+function renderCustomReviews(tagKey, all) {
+  cachedCustomReviews[tagKey] = all;
+  if (detailModalType === `custom:${tagKey}:pend` || detailModalType === `custom:${tagKey}:done`) renderDetailModal();
+  const tag   = customTags[tagKey] || {};
+  const color = customTagColor(tagKey);
+  const pend  = all.filter(r => !r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+  const done  = all.filter(r =>  r.checked).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+
+  const tabBadge = document.getElementById(`left-tab-custom-${tagKey}-badge`);
+  if (tabBadge) tabBadge.textContent = pend.length;
+
+  const pb = document.getElementById(`custom-${tagKey}-pend-badge`);
+  if (pb) { pb.textContent = pend.length; pb.className = 'badge' + (pend.length ? '' : ' empty'); pb.style.background = pend.length ? color : ''; }
+
+  const pendList = document.getElementById(`custom-${tagKey}-pend-list`);
+  if (pendList) {
+    pendList.innerHTML = '';
+    if (!pend.length) { pendList.innerHTML = `<div class="no-rev">${esc(tag.label||'')} 태그된<br>메시지가 여기 모입니다</div>`; }
+    else pend.forEach(r => pendList.appendChild(makeCustomRevItem(tagKey, r, false)));
+  }
+  const doneList = document.getElementById(`custom-${tagKey}-done-list`);
+  if (doneList) {
+    doneList.innerHTML = '';
+    if (!done.length) { doneList.innerHTML = '<div class="no-rev" style="font-size:11px">완료 항목이 표시됩니다</div>'; }
+    else done.forEach(r => doneList.appendChild(makeCustomRevItem(tagKey, r, true)));
+  }
+}
+
+function makeCustomRevItem(tagKey, r, isDone) {
+  const el = document.createElement('div');
+  el.className = 'rev-item' + (isDone ? ' done' : '');
+  const color = ucolor(r.userName);
+  const accentColor = customTagColor(tagKey);
+  el.innerHTML = `
+    <div class="rev-cb-wrap"><input type="checkbox" class="rev-cb" ${isDone?'checked':''}></div>
+    <div class="rev-body">
+      <div class="rev-meta">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:${color};color:#fff;font-size:9px;font-weight:700;margin-right:3px;">${esc((dName(r.userName)||'?')[0])}</span>
+        ${esc(dName(r.userName))} · <span style="color:${accentColor}">${esc(r.roomName||'')}</span>
+      </div>
+      <div class="rev-text">${tagHL(r.text||'')}</div>
+      <div class="rev-time">${esc(ts2time(r.timestamp))}</div>
+    </div>`;
+  el.querySelector('.rev-cb').addEventListener('change', async (e) => {
+    e.target.disabled = true;
+    try {
+      await update(dbRef(db, `customReviews/${tagKey}/${r.id}`), { checked: !isDone, checkedAt: !isDone ? Date.now() : null });
+    } catch(err) {
+      e.target.checked = isDone;
+      alert('업데이트 실패: ' + err.message);
+    } finally { e.target.disabled = false; }
+  });
+  if (isDone && canDelete(r)) el.appendChild(makeDelBtn(`customReviews/${tagKey}/${r.id}`));
+  return el;
+}
+
+// 관리자가 config/customTags를 추가/수정/삭제할 때마다 호출 — 탭/패널 DOM을 재생성
+function renderCustomTagUI() {
+  const tabBar = document.querySelector('.left-tab-bar');
+  const leftEl = document.getElementById('left');
+  if (!tabBar || !leftEl) return;
+
+  // 삭제된 태그의 리스너는 해제
+  Object.keys(customTagListeners).forEach(tagKey => {
+    if (!customTags[tagKey]) {
+      try { customTagListeners[tagKey](); } catch(e) {}
+      delete customTagListeners[tagKey];
+      delete cachedCustomReviews[tagKey];
+    }
+  });
+
+  // 기존에 생성해둔 커스텀 탭/패널 제거 후 재생성 (기존 3개 탭/패널은 절대 건드리지 않음)
+  tabBar.querySelectorAll('.custom-tab-btn').forEach(el => el.remove());
+  leftEl.querySelectorAll('.custom-tab-panel').forEach(el => el.remove());
+
+  Object.keys(customTags).forEach(tagKey => {
+    const tag = customTags[tagKey];
+    if (!tag || !tag.label) return;
+    const color = customTagColor(tagKey);
+
+    const btn = document.createElement('button');
+    btn.className = 'left-tab-btn custom-tab-btn';
+    btn.id = `left-tab-custom-${tagKey}`;
+    btn.innerHTML = `${esc(tag.label)} <span class="badge" id="left-tab-custom-${tagKey}-badge" style="background:${color}">0</span>`;
+    btn.addEventListener('click', () => switchLeftTab(`custom:${tagKey}`));
+    tabBar.appendChild(btn);
+
+    const panel = document.createElement('div');
+    panel.id = `left-panel-custom-${tagKey}`;
+    panel.className = 'left-panel-body custom-tab-panel';
+    panel.hidden = true;
+    panel.innerHTML = `
+      <div class="rev-sec">
+        <div class="sec-hdr">
+          <div class="sec-dot" style="background:${color}"></div>
+          <button class="sec-lbl-btn" onclick="openDetailModal('custom:${tagKey}:pend')" title="크게 보기">${esc(tag.label)} 요청</button>
+          <div class="badge" id="custom-${tagKey}-pend-badge" style="background:${color}">0</div>
+        </div>
+        <div class="rev-list" id="custom-${tagKey}-pend-list">
+          <div class="no-rev">${esc(tag.label)} 태그된<br>메시지가 여기 모입니다</div>
+        </div>
+      </div>
+      <div class="rev-done">
+        <div class="sec-hdr">
+          <div class="sec-dot done"></div>
+          <button class="sec-lbl-btn" onclick="openDetailModal('custom:${tagKey}:done')" title="크게 보기">완료</button>
+        </div>
+        <div class="rev-list" id="custom-${tagKey}-done-list">
+          <div class="no-rev" style="font-size:11px">완료 항목이 표시됩니다</div>
+        </div>
+      </div>
+      <div class="rev-files">
+        <div class="sec-hdr">
+          <div class="sec-dot file"></div>
+          <button class="sec-lbl-btn" onclick="openDetailModal('custom:${tagKey}:files')" title="크게 보기">파일 및 이미지</button>
+          <div class="badge blue" id="custom-${tagKey}-files-badge">0</div>
+        </div>
+        <div class="rev-list" id="custom-${tagKey}-files-list">
+          <div class="no-rev" style="font-size:11px">첨부된 파일과 이미지가<br>여기 표시됩니다</div>
+        </div>
+      </div>`;
+    leftEl.appendChild(panel);
+
+    if (user) ensureCustomTagListener(tagKey);
+    if (cachedCustomReviews[tagKey]) renderCustomReviews(tagKey, cachedCustomReviews[tagKey]);
+    if (typeof cachedFiles !== 'undefined' && cachedFiles.length) renderFilesGallery(cachedFiles);
+  });
 }
 
 // ──────────────────────────────────────────────────────
@@ -3326,10 +3723,98 @@ document.getElementById('admin-pwd-confirm-btn').addEventListener('click', () =>
   if (pwd !== ADMIN_PWD) { document.getElementById('admin-pwd-err').hidden = false; return; }
   document.getElementById('admin-pwd-modal').hidden = true;
   renderAdminUserList();
+  renderCustomTagAdminList();
   renderRoleList();
   renderTransferSection();
   renderMaintenanceToggle();
   document.getElementById('admin-panel-modal').hidden = false;
+});
+
+// ──────────────────────────────────────────────────────
+// 커스텀 태그 관리 (관리자 패널)
+// ──────────────────────────────────────────────────────
+function renderCustomTagAdminList() {
+  const el = document.getElementById('admin-custom-tag-list');
+  if (!el) return;
+  const keys = Object.keys(customTags);
+  if (!keys.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 2px">등록된 커스텀 태그가 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = keys.map(tagKey => {
+    const tag      = customTags[tagKey] || {};
+    const tagUsers = Array.isArray(tag.users) ? tag.users : [];
+    const color    = customTagColor(tagKey);
+    const userChips = USERS.map(u => {
+      const checked = tagUsers.includes(u);
+      return `<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);cursor:pointer">
+        <input type="checkbox" ${checked?'checked':''} data-tagkey="${esc(tagKey)}" data-username="${esc(u)}" class="custom-tag-user-toggle">
+        <span>${esc(u)}</span>
+      </label>`;
+    }).join('');
+    return `<div style="background:var(--sidebar);border-radius:var(--rs);padding:10px 12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:700;color:${color}">${esc(tag.label||'')}</span>
+        <button class="btn-sec custom-tag-del-btn" data-tagkey="${esc(tagKey)}" style="width:auto;padding:4px 10px;font-size:11px">삭제</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">${userChips}</div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.custom-tag-user-toggle').forEach(cb => {
+    cb.addEventListener('change', async (e) => {
+      const tagKey   = e.target.dataset.tagkey;
+      const name     = e.target.dataset.username;
+      const tag      = customTags[tagKey] || {};
+      const curUsers = Array.isArray(tag.users) ? tag.users : [];
+      const newUsers = e.target.checked
+        ? [...new Set([...curUsers, name])]
+        : curUsers.filter(u => u !== name);
+      e.target.disabled = true;
+      try {
+        await set(dbRef(db, `config/customTags/${tagKey}/users`), newUsers);
+      } catch(err) {
+        console.error('Custom tag user toggle error:', err);
+        e.target.checked = !e.target.checked;
+        alert('업데이트 실패: ' + err.message);
+      } finally { e.target.disabled = false; }
+    });
+  });
+
+  el.querySelectorAll('.custom-tag-del-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const tagKey = e.target.dataset.tagkey;
+      const tag    = customTags[tagKey] || {};
+      if (!confirm(`"${tag.label||''}" 태그를 삭제하시겠습니까?\n기존에 쌓인 검토 항목은 데이터베이스에는 남지만 화면에는 더 이상 표시되지 않습니다.`)) return;
+      e.target.disabled = true;
+      try {
+        await set(dbRef(db, `config/customTags/${tagKey}`), null);
+      } catch(err) {
+        alert('삭제 실패: ' + err.message);
+      } finally { e.target.disabled = false; }
+    });
+  });
+}
+
+document.getElementById('admin-add-tag-btn')?.addEventListener('click', async () => {
+  const input = document.getElementById('admin-new-tag-input');
+  const errEl = document.getElementById('admin-add-tag-err');
+  errEl.hidden = true;
+  let label = (input.value || '').trim();
+  if (!label) { errEl.textContent = '태그를 입력해주세요.'; errEl.hidden = false; return; }
+  if (!label.startsWith('@')) label = '@' + label;
+  if (['@부대표님','@팀원','@경영지원'].includes(label)) {
+    errEl.textContent = '이미 기본 제공되는 태그입니다.'; errEl.hidden = false; return;
+  }
+  const dup = Object.values(customTags).some(t => t?.label === label);
+  if (dup) { errEl.textContent = '이미 등록된 태그입니다.'; errEl.hidden = false; return; }
+  try {
+    const newRef = push(dbRef(db, 'config/customTags'));
+    await set(newRef, { label, users: [] });
+    input.value = '';
+  } catch(err) {
+    errEl.textContent = '추가 실패: ' + err.message; errEl.hidden = false;
+  }
 });
 
 // ──────────────────────────────────────────────────────
@@ -3389,6 +3874,11 @@ document.getElementById('admin-add-user-btn').addEventListener('click', async ()
 // ──────────────────────────────────────────────────────
 // PANEL VISIBILITY (검토요청 / 팀원요청 / 업무요청(경영) 3탭)
 // ──────────────────────────────────────────────────────
+// tab key: 'review' | 'team' | 'work' | 'custom:{tagKey}' 공통 헬퍼
+function _tabPanelId(key) { return key.startsWith('custom:') ? `left-panel-custom-${key.slice(7)}` : `left-panel-${key}`; }
+function _tabBtnId(key)   { return key.startsWith('custom:') ? `left-tab-custom-${key.slice(7)}`   : `left-tab-${key}`; }
+function _allTabKeys()    { return ['review','team','work', ...Object.keys(customTags).map(k => `custom:${k}`)]; }
+
 function applyPanelVisibility() {
   const leftEl = document.getElementById('left');
   if (!leftEl) return;
@@ -3396,45 +3886,37 @@ function applyPanelVisibility() {
   const canReview = reviewUsers.includes(name);
   const canTeam   = teamReviewUsers.includes(name);
   const canWork   = workRequestUsers.includes(name);
-  leftEl.hidden   = !(canReview || canTeam || canWork);
+  const allowedMap = { review: canReview, team: canTeam, work: canWork };
+  Object.entries(customTags).forEach(([tagKey, tag]) => {
+    allowedMap[`custom:${tagKey}`] = Array.isArray(tag?.users) && tag.users.includes(name);
+  });
+  leftEl.hidden = !Object.values(allowedMap).some(Boolean);
 
-  const tabReview = document.getElementById('left-tab-review');
-  const tabTeam   = document.getElementById('left-tab-team');
-  const tabWork   = document.getElementById('left-tab-work');
-  if (tabReview) tabReview.hidden = !canReview;
-  if (tabTeam)   tabTeam.hidden   = !canTeam;
-  if (tabWork)   tabWork.hidden   = !canWork;
+  _allTabKeys().forEach(key => {
+    const tabEl = document.getElementById(_tabBtnId(key));
+    if (tabEl) tabEl.hidden = !allowedMap[key];
+  });
 
   // 현재 활성 탭이 접근 불가면 가능한 첫 탭으로 전환
-  const reviewPanel = document.getElementById('left-panel-review');
-  const teamPanel   = document.getElementById('left-panel-team');
-  const workPanel   = document.getElementById('left-panel-work');
-  if (!reviewPanel || !teamPanel || !workPanel) return;
-
-  const activeTab = !reviewPanel.hidden ? 'review' : !teamPanel.hidden ? 'team' : !workPanel.hidden ? 'work' : null;
-  const activeOk  = (activeTab === 'review' && canReview) || (activeTab === 'team' && canTeam) || (activeTab === 'work' && canWork);
+  const activeKey = _allTabKeys().find(key => {
+    const p = document.getElementById(_tabPanelId(key));
+    return p && !p.hidden;
+  });
+  const activeOk = activeKey && allowedMap[activeKey];
 
   if (!activeOk) {
-    if (canReview)    switchLeftTab('review');
-    else if (canTeam) switchLeftTab('team');
-    else if (canWork) switchLeftTab('work');
+    const firstAllowed = _allTabKeys().find(key => allowedMap[key]);
+    if (firstAllowed) switchLeftTab(firstAllowed);
   }
 }
 
 function switchLeftTab(tab) {
-  const reviewPanel = document.getElementById('left-panel-review');
-  const teamPanel   = document.getElementById('left-panel-team');
-  const workPanel   = document.getElementById('left-panel-work');
-  const tabReview   = document.getElementById('left-tab-review');
-  const tabTeam     = document.getElementById('left-tab-team');
-  const tabWork     = document.getElementById('left-tab-work');
-  if (!reviewPanel || !teamPanel || !workPanel) return;
-  reviewPanel.hidden = (tab !== 'review');
-  teamPanel.hidden   = (tab !== 'team');
-  workPanel.hidden   = (tab !== 'work');
-  if (tabReview) tabReview.classList.toggle('active', tab === 'review');
-  if (tabTeam)   tabTeam.classList.toggle('active', tab === 'team');
-  if (tabWork)   tabWork.classList.toggle('active', tab === 'work');
+  _allTabKeys().forEach(key => {
+    const panel = document.getElementById(_tabPanelId(key));
+    const tabEl = document.getElementById(_tabBtnId(key));
+    if (panel) panel.hidden = (key !== tab);
+    if (tabEl) tabEl.classList.toggle('active', key === tab);
+  });
 }
 
 // 탭 클릭 이벤트
@@ -3758,6 +4240,33 @@ function renderDetailModal() {
   const bodyEl  = document.getElementById('detail-modal-body');
   if (!titleEl || !bodyEl) return;
 
+  // 커스텀 태그(custom:{tagKey}:pend|done|files) 는 별도 처리 후 종료
+  if (typeof detailModalType === 'string' && detailModalType.startsWith('custom:')) {
+    const parts  = detailModalType.split(':');
+    const tagKey = parts[1];
+    const sub    = parts[2];
+    const tag    = customTags[tagKey] || {};
+    if (sub === 'files') {
+      titleEl.textContent = `파일 및 이미지 (${tag.label||''})`;
+      countEl.textContent = `${cachedFiles.length}건`;
+      bodyEl.innerHTML = '';
+      renderDetailFiles(bodyEl);
+      return;
+    }
+    const all   = cachedCustomReviews[tagKey] || [];
+    const items = all.filter(r => sub === 'done' ? r.checked : !r.checked)
+                     .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+    titleEl.textContent = `${tag.label||''} ${sub === 'done' ? '완료' : '요청'}`;
+    countEl.textContent = `${items.length}건`;
+    bodyEl.innerHTML = '';
+    if (!items.length) {
+      bodyEl.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:60px 0;font-size:14px">${esc(tag.label||'')} 태그된 항목이 없습니다</div>`;
+    } else {
+      items.forEach(r => bodyEl.appendChild(makeDetailRevItem(r, sub === 'done', `custom:${tagKey}`)));
+    }
+    return;
+  }
+
   switch (detailModalType) {
     case 'review': {
       const items = cachedReviews.filter(r => !r.checked)
@@ -3861,16 +4370,21 @@ function renderDetailModal() {
   }
 }
 
-// type: false/'review' → reviews, 'team' → teamReviews, 'work' → workRequests
+// type: false/'review' → reviews, 'team' → teamReviews, 'work' → workRequests, 'custom:{tagKey}' → customReviews/{tagKey}
 function makeDetailRevItem(r, isDone, type) {
+  const isCustom  = typeof type === 'string' && type.startsWith('custom:');
+  const customKey = isCustom ? type.slice(7) : null;
   const isWork = type === 'work';
   const isTeam = type === 'team';
-  const fbPath = isWork ? `workRequests/${r.id}` : isTeam ? `teamReviews/${r.id}` : `reviews/${r.id}`;
+  const fbPath = isCustom ? `customReviews/${customKey}/${r.id}`
+               : isWork   ? `workRequests/${r.id}`
+               : isTeam   ? `teamReviews/${r.id}`
+               : `reviews/${r.id}`;
   const el = document.createElement('div');
-  el.className = 'det-rev-card' + (isDone ? ' done' : '') + (isWork || isTeam ? ' work' : '');
+  el.className = 'det-rev-card' + (isDone ? ' done' : '') + (isWork || isTeam || isCustom ? ' work' : '');
   const color  = ucolor(r.userName);
   const dispN  = dName(r.userName);
-  const accentColor = isWork ? '#27AE60' : isTeam ? '#9B59B6' : 'var(--primary)';
+  const accentColor = isCustom ? customTagColor(customKey) : isWork ? '#27AE60' : isTeam ? '#9B59B6' : 'var(--primary)';
 
   // 좌측: 체크박스 (팀원 타입은 전체완료 표시)
   const leftCol = document.createElement('div');
@@ -4074,6 +4588,15 @@ document.addEventListener('keydown', (e) => {
 // 페이지 로드 즉시 Firebase 초기화 + USERS 로딩
 // (loadUsersFromFirebase 완료 후 세션 복원은 해당 함수 내부에서 처리)
 initFirebaseEarly();
+
+// PWA 서비스워커 등록 (오프라인 캐싱 · 홈 화면 설치 지원, v3.36 배포 스캐폴딩에서 추가)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(err => {
+      console.warn('서비스워커 등록 실패:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
