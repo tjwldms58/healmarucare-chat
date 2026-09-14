@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.40 | 2026-09-14 | 관리자패널에 "커스텀 태그 관리" 추가: @부대표님/@팀원/@경영지원 외 임의의 @태그를 관리자가 새로 등록하면 검토요청 패널(PC/모바일 모두)에 해당 태그 전용 목록(요청/완료/파일)이 자동 생성됨. 태그별로 볼 수 있는 사람을 관리자가 직접 선택. 기존 3개 태그 로직/데이터는 전혀 건드리지 않음(customTags/customReviews 경로로 완전 분리) -->
+<!-- v3.41 | 2026-09-14 | 버그 수정: <script type="module"> 안의 함수는 window 전역에 노출되지 않아 HTML onclick="함수명()" 속성에서 호출이 실패했음(검토패널 바깥 여백을 눌러도 안 닫히고, "크게 보기" 버튼들과 모바일 뒤로가기(←)/서랍열기(☰) 버튼도 무반응이었던 원인). closeLeftDrawer/toggleLeftDrawer/backToRoomsList/openDetailModal을 window에 명시적으로 노출해 정상 동작하도록 수정 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -960,7 +960,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.40</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.41</p>
   </div>
 </div>
 
@@ -4189,6 +4189,14 @@ document.getElementById('announcement-clear-btn').addEventListener('click', asyn
 // ──────────────────────────────────────────────────────
 // 전역 라이트박스 (img onclick에서 호출)
 window.openLightboxGlobal = openLightbox;
+// v3.41: <script type="module"> 내부 함수는 전역(window)에 노출되지 않아 HTML의
+// onclick="함수명()" 속성에서 호출할 수 없다(모듈 스코프). 이 때문에 검토패널 바깥 여백(백드롭)을
+// 눌러도 닫히지 않고, "크게 보기" 버튼들과 모바일 뒤로가기(←)/서랍열기(☰) 버튼도 반응이 없었다.
+// 아래처럼 window에 명시적으로 노출해 HTML onclick에서 정상 호출되도록 수정.
+window.closeLeftDrawer  = closeLeftDrawer;
+window.toggleLeftDrawer = toggleLeftDrawer;
+window.backToRoomsList  = backToRoomsList;
+window.openDetailModal  = openDetailModal;
 
 async function startApp() {
   document.getElementById('login-screen').hidden = true;
