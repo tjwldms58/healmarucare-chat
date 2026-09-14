@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.43 | 2026-09-14 | 관리자패널에서 "새 사용자 추가"를 하면 "멤버 직책 관리" 목록에도 자동으로 함께 표시되도록 수정 (기존에는 새로고침 전까지 목록에 안 보였음) -->
+<!-- v3.45 | 2026-09-14 | PC 좁은 레이아웃(500px)에서 대화창 말풍선이 여러 줄로 줄바꿈되던 문제 수정 - 모바일과 동일하게 말풍선 최대폭을 84%로 넓힘 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -920,8 +920,10 @@
     @media (min-width: 881px) {
       /* v3.42: 넓은 모니터에서도 카카오톡 데스크톱처럼 창이 화면 전체로 늘어나지 않고
          가운데 정렬된 좁은 창 형태로 보이도록 #app 자체의 너비를 제한한다.
-         (좌측 아이콘 레일로 하단 탭을 대체한 이유가 바로 이 좁은 레이아웃을 위해서였음) */
-      #app { max-width: 1000px; margin: 0 auto; position: relative; box-shadow: var(--shadow-lg); }
+         (좌측 아이콘 레일로 하단 탭을 대체한 이유가 바로 이 좁은 레이아웃을 위해서였음)
+         v3.44: 1000px → 500px로 절반 축소. 이 폭에서는 검토패널(260px)을 항상 펴놓을 자리가
+         없으므로, 검토패널도 모바일처럼 좌측 아이콘 클릭으로 여닫는 서랍으로 전환한다. */
+      #app { max-width: 500px; margin: 0 auto; position: relative; box-shadow: var(--shadow-lg); }
       #side-rail {
         display: flex; flex-direction: column; align-items: center; gap: 6px;
         position: absolute; top: 0; left: 0; bottom: 0; width: 56px;
@@ -930,6 +932,26 @@
       }
       header, #main-tabs { margin-left: 56px; }
       #bottom-nav { display: none; }
+
+      /* 검토패널: #tab-chat(.tab-panel, position:absolute, inset:0) 기준으로 오프캔버스 서랍 처리.
+         모바일 버전과 동일한 #left.open / #left-backdrop.show 클래스를 그대로 재사용한다. */
+      #left {
+        position: absolute; top: 0; left: 0; bottom: 0; z-index: 400;
+        width: min(75%, 300px);
+        transform: translateX(-100%);
+        transition: transform .22s ease;
+        box-shadow: var(--shadow-lg);
+      }
+      #left.open { transform: translateX(0); }
+      #left-backdrop.show {
+        display: block; position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 390;
+      }
+
+      /* v3.45: #app 폭을 500px로 줄이면서 #chat 실제 렌더링 폭도 모바일만큼 좁아졌다.
+         이 미디어쿼리는 뷰포트(브라우저 창) 기준이라 지금까지는 적용되지 않았는데,
+         실제로 좁아진 건 뷰포트가 아니라 #app 내부이므로 여기서도 말풍선 폭을 넓혀줘야 한다. */
+      #msgs { padding: 12px 12px; }
+      .msg-col { max-width: 84%; }
     }
   </style>
 </head>
@@ -964,7 +986,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.43</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.45</p>
   </div>
 </div>
 
@@ -1672,7 +1694,12 @@ document.getElementById('nav-review').onclick = () => {
 // v3.39: PC 좌측 아이콘 레일 — 검토패널은 PC에서 항상 열려있는 고정 사이드바이므로 채팅 탭으로 이동만 하면 됨
 document.getElementById('rail-list').onclick   = () => switchTab('list');
 document.getElementById('rail-chat').onclick   = () => switchTab('chat');
-document.getElementById('rail-review').onclick = () => switchTab('chat');
+// v3.44: PC 창 폭이 좁아지면서 검토패널이 상시 고정 사이드바 자리를 잃었으므로,
+// 검토요청 아이콘도 모바일과 동일하게 채팅 탭으로 이동한 뒤 서랍을 토글해서 연다.
+document.getElementById('rail-review').onclick = () => {
+  switchTab('chat');
+  toggleLeftDrawer();
+};
 
 // ──────────────────────────────────────────────────────
 // MEMBER LIST
@@ -2298,6 +2325,12 @@ function updateMobileNavActive() {
   const drawerOpen = document.getElementById('left').classList.contains('open');
   const navReview = document.getElementById('nav-review');
   if (navReview) navReview.classList.toggle('active', drawerOpen);
+  // v3.44: PC 좁은 레이아웃에서도 검토패널이 서랍으로 바뀌었으므로 좌측 레일 아이콘도 동일하게 동기화
+  const railReview = document.getElementById('rail-review');
+  if (railReview) railReview.classList.toggle('active', drawerOpen);
+  const railChat = document.getElementById('rail-chat');
+  if (railChat && drawerOpen) railChat.classList.remove('active');
+  else if (railChat && !drawerOpen) railChat.classList.toggle('active', curTab === 'chat');
   ['list','chat','community'].forEach(t => {
     const btn = document.getElementById(`nav-${t}`);
     if (btn) btn.classList.toggle('active', !drawerOpen && t === curTab);
