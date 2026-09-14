@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.45 | 2026-09-14 | PC 좁은 레이아웃(500px)에서 대화창 말풍선이 여러 줄로 줄바꿈되던 문제 수정 - 모바일과 동일하게 말풍선 최대폭을 84%로 넓힘 -->
+<!-- v3.46 | 2026-09-14 | 공지(고정 메시지) 바를 기본적으로 한 줄로 접어서 표시. 클릭하면 펼침/접힘 토글 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -778,6 +778,16 @@
     }
     .mb-nm { font-size: 13px; font-weight: 500; color: var(--text); }
 
+    /* v3.46: 공지(고정 메시지) 바 - 기본은 한 줄로 접어서 채팅 공간을 가리지 않게 함 */
+    #announcement-text.ann-collapsed {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #announcement-text.ann-expanded {
+      white-space: pre-wrap;
+    }
+    #announcement-toggle-btn { transition: transform .15s ease; }
+    #announcement-toggle-btn.expanded { transform: rotate(180deg); }
+
     /* Pin button on message hover */
     .msg-group { position: relative; }
     .pin-btn {
@@ -986,7 +996,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.45</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.46</p>
   </div>
 </div>
 
@@ -1426,13 +1436,14 @@
             </div>
             <button id="room-menu-btn" title="채팅방 옵션" style="margin-left:auto">⋮</button>
           </div>
-          <div id="announcement-bar" hidden style="padding:8px 18px;background:linear-gradient(90deg,var(--primary-lt),var(--surface));border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;flex-shrink:0">
+          <div id="announcement-bar" hidden style="padding:8px 18px;background:linear-gradient(90deg,var(--primary-lt),var(--surface));border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;flex-shrink:0;cursor:pointer" title="클릭하여 펼치기/접기">
             <span style="font-size:14px;flex-shrink:0">📢</span>
             <div style="flex:1;min-width:0">
               <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:2px">공지</div>
-              <div id="announcement-text" style="font-size:13px;color:var(--text);word-break:break-all;white-space:pre-wrap"></div>
+              <div id="announcement-text" class="ann-collapsed" style="font-size:13px;color:var(--text);word-break:break-all"></div>
               <div id="announcement-meta" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
             </div>
+            <button id="announcement-toggle-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0" title="펼치기/접기">▾</button>
             <button id="announcement-clear-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;flex-shrink:0" title="공지 해제">✕</button>
           </div>
           <div id="msgs">
@@ -4199,8 +4210,21 @@ document.getElementById('help-btn').addEventListener('click', openHelp);
 // ──────────────────────────────────────────────────────
 // ANNOUNCEMENT
 // ──────────────────────────────────────────────────────
+let announcementCollapsed = true; // v3.46: 공지는 방을 열 때마다 기본적으로 접힌 상태로 시작
+
+function setAnnouncementCollapsed(collapsed) {
+  announcementCollapsed = collapsed;
+  const txt = document.getElementById('announcement-text');
+  const toggleBtn = document.getElementById('announcement-toggle-btn');
+  txt.classList.toggle('ann-collapsed', collapsed);
+  txt.classList.toggle('ann-expanded', !collapsed);
+  toggleBtn.classList.toggle('expanded', !collapsed);
+  toggleBtn.textContent = collapsed ? '▾' : '▴';
+}
+
 function listenAnnouncement(roomId) {
   if (announcementListener) { announcementListener(); announcementListener = null; }
+  setAnnouncementCollapsed(true); // 방을 새로 열 때마다 접힌 상태로 초기화
   announcementListener = onValue(dbRef(db, `rooms/${roomId}/announcement`), snap => {
     const bar = document.getElementById('announcement-bar');
     const data = snap.val();
@@ -4217,9 +4241,19 @@ function listenAnnouncement(roomId) {
   });
 }
 
-document.getElementById('announcement-clear-btn').addEventListener('click', async () => {
+document.getElementById('announcement-clear-btn').addEventListener('click', async (e) => {
+  e.stopPropagation();
   if (!curRoomId) return;
   await set(dbRef(db, `rooms/${curRoomId}/announcement`), null);
+});
+
+document.getElementById('announcement-toggle-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  setAnnouncementCollapsed(!announcementCollapsed);
+});
+
+document.getElementById('announcement-bar').addEventListener('click', () => {
+  setAnnouncementCollapsed(!announcementCollapsed);
 });
 
 // ──────────────────────────────────────────────────────
