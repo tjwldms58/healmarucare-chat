@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.48 | 2026-09-14 | PC에서도 채팅방 목록과 채팅 화면을 나란히 보여주지 않고, 모바일처럼 목록→(클릭)→채팅 한 화면씩 전환하도록 변경. 채팅 화면 상단에 ← 뒤로가기 버튼 추가 -->
+<!-- v3.51 | 2026-09-14 | 좌측 아이콘 레일과 헤더/채팅 영역 사이에 그림자가 끼어 분리돼 보이던 문제 수정 (헤더 그림자 제거) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -137,10 +137,10 @@
     .btn-primary {
       width: 100%; padding: 13px; border: none; border-radius: var(--rs);
       background: #1A6B8F; color: #fff; font-size: 15px; font-weight: 600;
-      font-family: inherit; cursor: pointer; letter-spacing: .3px; transition: opacity .15s;
+      font-family: inherit; cursor: pointer; letter-spacing: .3px; transition: background .15s;
     }
-    .btn-primary:hover { opacity: .9; }
-    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary:hover { background: var(--primary-dk); }
+    .btn-primary:disabled { background: var(--text-muted); cursor: not-allowed; }
     .login-err {
       background: #FFF0F0; border: 1px solid #FFCDD2;
       color: #C62828; padding: 10px 14px; border-radius: var(--rx);
@@ -154,7 +154,7 @@
       height: 54px; padding: 0 20px;
       background: #1A6B8F;
       display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.18); z-index: 10;
+      flex-shrink: 0; z-index: 10;
     }
     .h-brand { display: flex; align-items: center; gap: 10px; }
     .h-logo {
@@ -171,34 +171,34 @@
     }
     .h-uname {
       font-size: 13px; font-weight: 500; color: #fff; white-space: nowrap; flex-shrink: 0;
-      background: rgba(255,255,255,.15); padding: 5px 12px; border-radius: 20px;
+      background: #3C81A0; padding: 5px 12px; border-radius: 20px;
     }
-    .h-db { font-size: 11px; color: rgba(255,255,255,.6); background: rgba(255,255,255,.1); padding: 4px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+    .h-db { font-size: 11px; color: #A3C3D2; background: #317A9A; padding: 4px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
     .h-db.ok { color: #7EEBB8; }
     .btn-logout {
-      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
+      background: #3C81A0; border: 1px solid #5390AB;
       color: #fff; padding: 5px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
       font-size: 12px; font-family: inherit; cursor: pointer; transition: background .15s;
     }
-    .btn-logout:hover { background: rgba(255,255,255,.25); }
+    .btn-logout:hover { background: #5390AB; }
     .btn-admin {
-      background: rgba(255,255,255,.15); border: none; border-radius: var(--rx);
+      background: #3C81A0; border: none; border-radius: var(--rx);
       color: #fff; font-size: 16px; padding: 6px 10px; cursor: pointer; transition: background .15s;
       flex-shrink: 0;
     }
-    .btn-admin:hover { background: rgba(255,255,255,.3); }
+    .btn-admin:hover { background: #5F97B1; }
     .btn-edit-name {
-      background: none; border: none; color: rgba(255,255,255,.75);
+      background: none; border: none; color: #C6DAE3;
       font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 6px;
       transition: background .15s; line-height: 1; flex-shrink: 0;
     }
-    .btn-edit-name:hover { background: rgba(255,255,255,.2); color: #fff; }
+    .btn-edit-name:hover { background: #4889A5; color: #fff; }
     .btn-settings {
-      background: none; border: none; color: rgba(255,255,255,.75);
+      background: none; border: none; color: #C6DAE3;
       font-size: 17px; cursor: pointer; padding: 4px 7px; border-radius: 6px;
       transition: background .15s; line-height: 1; flex-shrink: 0;
     }
-    .btn-settings:hover { background: rgba(255,255,255,.2); color: #fff; }
+    .btn-settings:hover { background: #4889A5; color: #fff; }
 
     /* 헤더 연결 상태 점 */
     .conn-dot {
@@ -207,10 +207,10 @@
       animation: conn-blink 1.8s ease-in-out infinite;
     }
     @keyframes conn-blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.25; }
+      0%, 100% { background: #4CAF50; }
+      50% { background: #BFE6C6; }
     }
-    .conn-dot.offline { background: #9e9e9e; animation: none; opacity: 0.55; }
+    .conn-dot.offline { background: #C7C7C7; animation: none; }
 
     /* 설정 패널 내 상태 텍스트 */
     .sp-status { font-size: 11px; color: var(--text-muted); }
@@ -222,10 +222,10 @@
       width: 280px; background: var(--surface); border-radius: var(--r);
       box-shadow: var(--shadow-lg); border: 1px solid var(--border);
       padding: 18px 20px;
-      transform: translateY(-8px); opacity: 0; pointer-events: none;
-      transition: transform .18s, opacity .18s;
+      transform: translateY(-8px); visibility: hidden; pointer-events: none;
+      transition: transform .18s, visibility .18s;
     }
-    #settings-panel.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+    #settings-panel.open { transform: translateY(0); visibility: visible; pointer-events: all; }
     .sp-title { font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 14px; }
     .sp-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .sp-row:last-child { margin-bottom: 0; }
@@ -355,7 +355,7 @@
       display: flex; gap: 10px; padding: 10px 14px;
       border-bottom: 1px solid var(--border-lt); align-items: flex-start;
     }
-    .rev-item:hover { background: rgba(0,0,0,.02); }
+    .rev-item:hover { background: #FAFAFA; }
     .rev-cb-wrap { flex-shrink: 0; padding-top: 2px; }
     .rev-cb {
       width: 17px; height: 17px; border: 2px solid var(--border);
@@ -376,11 +376,11 @@
     /* 삭제 버튼 */
     .del-btn {
       flex-shrink: 0; background: none; border: none; padding: 2px 4px;
-      font-size: 14px; cursor: pointer; opacity: 0.25; color: var(--text-muted);
-      border-radius: 4px; transition: opacity .15s, color .15s; line-height: 1;
+      font-size: 14px; cursor: pointer; color: var(--text-muted);
+      border-radius: 4px; transition: color .15s; line-height: 1;
       align-self: flex-start; margin-top: 1px;
     }
-    .del-btn:hover { opacity: 1; color: #e55; }
+    .del-btn:hover { color: #e55; }
     /* 팀원 승인 칩 */
     .team-approvals { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
     .appr-chip {
@@ -390,7 +390,7 @@
       background: transparent; cursor: default; transition: all .15s;
       white-space: nowrap; font-weight: 500;
     }
-    .appr-chip.approved { border-color: #4CAF50; color: #4CAF50; background: rgba(76,175,80,.08); }
+    .appr-chip.approved { border-color: #4CAF50; color: #4CAF50; background: #F1F9F1; }
     .appr-chip.mine { cursor: pointer; }
     .appr-chip.mine:not(.approved):hover { border-color: var(--primary); color: var(--primary); background: var(--primary-lt); }
 
@@ -439,7 +439,7 @@
       border-radius: var(--rs); border: 1px solid var(--border);
       border-left: 3px solid var(--review-dot);
     }
-    .det-rev-card.done { opacity: .75; border-left-color: var(--done-dot); }
+    .det-rev-card.done { background: var(--bg); border-left-color: var(--done-dot); }
     .det-rev-card.work { border-left-color: #27AE60; }
     .det-rev-card.work.done { border-left-color: var(--done-dot); }
     .det-rev-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
@@ -549,11 +549,11 @@
       padding: 9px 14px; cursor: pointer; transition: background .12s;
       border-radius: 0;
     }
-    .room-item:hover { background: rgba(26,107,143,.07); }
+    .room-item:hover { background: #E4EDF2; }
     .room-item.active { background: var(--primary-lt); }
-    .room-hash { color: var(--text-muted); font-size: 15px; flex-shrink: 0; }
+    .room-hash { display: none; }
     .room-info { flex: 1; min-width: 0; }
-    .room-nm { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .room-nm { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-cnt { font-size: 11px; color: var(--text-muted); }
 
     /* ============================================================ CHAT AREA */
@@ -570,13 +570,15 @@
       transition: background .15s;
     }
     #room-menu-btn:hover { background: var(--sidebar); color: #000; }
-    .m-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .m-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .m-chips.collapsed { display: none; }
+    #member-chips-toggle-btn.collapsed { transform: rotate(-90deg); }
     .m-chip { font-size: 11px; font-weight: 600; background: var(--sidebar); padding: 3px 8px; border-radius: 10px; }
 
     #msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px; background: var(--chat-bg); }
     .date-div { text-align: center; margin: 14px 0; }
     .date-div span {
-      font-size: 11px; color: var(--text-muted); background: rgba(0,0,0,.07);
+      font-size: 11px; color: var(--text-muted); background: #EDEDED;
       padding: 4px 12px; border-radius: 12px;
     }
     .chat-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--text-muted); }
@@ -630,7 +632,7 @@
       color: inherit; border-radius: var(--r);
       background: var(--surface); border: 1px solid var(--border);
     }
-    .bubble.me .doc-bubble { background: var(--bubble-me-bg); border-color: rgba(255,255,255,.2); }
+    .bubble.me .doc-bubble { background: var(--bubble-me-bg); border-color: #D4ECFF; }
     .doc-icon { font-size: 28px; flex-shrink: 0; }
     .doc-info { flex: 1; min-width: 0; }
     .doc-nm { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -668,10 +670,10 @@
       background: var(--primary); color: #fff;
       font-size: 16px; cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      transition: opacity .15s;
+      transition: background .15s;
     }
-    .btn-send:hover { opacity: .85; }
-    .btn-send:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-send:hover { background: var(--primary-dk); }
+    .btn-send:disabled { background: var(--text-muted); cursor: not-allowed; }
 
     /* Upload progress */
     #upload-progress {
@@ -705,10 +707,10 @@
     .btn-post {
       margin-left: auto; padding: 8px 20px; border: none; border-radius: var(--rs);
       background: var(--primary); color: #fff; font-size: 14px; font-weight: 600;
-      font-family: inherit; cursor: pointer; transition: opacity .15s;
+      font-family: inherit; cursor: pointer; transition: background .15s;
     }
-    .btn-post:hover { opacity: .88; }
-    .btn-post:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-post:hover { background: var(--primary-dk); }
+    .btn-post:disabled { background: var(--text-muted); cursor: not-allowed; }
     #community-img-preview {
       margin-top: 10px; border-radius: var(--rs); overflow: hidden;
       position: relative; display: inline-block;
@@ -716,7 +718,7 @@
     #community-img-preview img { max-width: 100%; max-height: 200px; display: block; border-radius: var(--rs); }
     .remove-img-btn {
       position: absolute; top: 6px; right: 6px;
-      background: rgba(0,0,0,.5); color: #fff; border: none;
+      background: var(--text); color: #fff; border: none;
       width: 22px; height: 22px; border-radius: 50%;
       cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;
     }
@@ -741,7 +743,7 @@
 
     /* ============================================================ MODALS */
     .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      position: fixed; inset: 0; background: var(--text);
       z-index: 500; display: flex; align-items: center; justify-content: center;
     }
     .modal {
@@ -846,7 +848,7 @@
 
     /* Lightbox */
     #lightbox {
-      position: fixed; inset: 0; background: rgba(0,0,0,.88);
+      position: fixed; inset: 0; background: #000;
       z-index: 1000; display: flex; align-items: center; justify-content: center;
       cursor: zoom-out;
     }
@@ -882,7 +884,7 @@
       #left.open { transform: translateX(0); }
       #left-backdrop.show {
         display: block;
-        position: fixed; inset: 54px 0 0 0; background: rgba(0,0,0,.35); z-index: 390;
+        position: fixed; inset: 54px 0 0 0; background: var(--text); z-index: 390;
       }
       .mobile-left-toggle {
         display: flex; align-items: center; justify-content: center;
@@ -933,7 +935,8 @@
          (좌측 아이콘 레일로 하단 탭을 대체한 이유가 바로 이 좁은 레이아웃을 위해서였음)
          v3.44: 1000px → 500px로 절반 축소. 이 폭에서는 검토패널(260px)을 항상 펴놓을 자리가
          없으므로, 검토패널도 모바일처럼 좌측 아이콘 클릭으로 여닫는 서랍으로 전환한다. */
-      #app { max-width: 500px; margin: 0 auto; position: relative; box-shadow: var(--shadow-lg); }
+      /* v3.50: 500px → 420px로 한 번 더 축소 (Electron 창 너비도 함께 줄임) */
+      #app { max-width: 420px; margin: 0 auto; position: relative; box-shadow: var(--shadow-lg); }
       #side-rail {
         display: flex; flex-direction: column; align-items: center; gap: 6px;
         position: absolute; top: 0; left: 0; bottom: 0; width: 56px;
@@ -942,6 +945,16 @@
       }
       header, #main-tabs { margin-left: 56px; }
       #bottom-nav { display: none; }
+
+      /* v3.49: 헤더도 뷰포트가 아니라 #app 내부(500px - 레일56px = 444px) 기준으로
+         실제로는 좁게 렌더링되므로, 모바일과 동일하게 헤더를 압축하고 넘치면 가로 스크롤 허용 */
+      header { padding: 0 12px; overflow-x: auto; }
+      .h-brand { gap: 6px; flex-shrink: 0; }
+      .h-name { display: none; }
+      .h-right { gap: 6px; }
+      .h-uname { padding: 5px 9px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
+      .btn-logout { padding: 5px 9px; font-size: 11px; }
+      .btn-settings, .btn-admin, .btn-edit-name { padding: 4px 5px; }
 
       /* 검토패널: #tab-chat(.tab-panel, position:absolute, inset:0) 기준으로 오프캔버스 서랍 처리.
          모바일 버전과 동일한 #left.open / #left-backdrop.show 클래스를 그대로 재사용한다. */
@@ -954,7 +967,7 @@
       }
       #left.open { transform: translateX(0); }
       #left-backdrop.show {
-        display: block; position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 390;
+        display: block; position: absolute; inset: 0; background: var(--text); z-index: 390;
       }
 
       /* v3.45: #app 폭을 500px로 줄이면서 #chat 실제 렌더링 폭도 모바일만큼 좁아졌다.
@@ -1009,7 +1022,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.48</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.51</p>
   </div>
 </div>
 
@@ -1285,9 +1298,9 @@
 
   <!-- PC 전용: 좌측 아이콘 레일 (v3.39) — 넓은 화면에서 하단 탭 대신 카카오톡 스타일 좌측 아이콘 3개로 표시 -->
   <nav id="side-rail">
-    <button class="rail-btn" id="rail-list" title="목록">👥</button>
-    <button class="rail-btn active" id="rail-chat" title="채팅">💬</button>
-    <button class="rail-btn" id="rail-review" title="검토요청">📌</button>
+    <button class="rail-btn" id="rail-list" title="목록"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22.5 21v-2a4 4 0 0 0-3-3.87"/><path d="M16.5 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+    <button class="rail-btn active" id="rail-chat" title="채팅"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button>
+    <button class="rail-btn" id="rail-review" title="검토요청"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></button>
   </nav>
 
   <!-- Main Tab Panels -->
@@ -1443,13 +1456,16 @@
         <div id="chat">
           <div id="chat-hdr" hidden>
             <button class="mobile-back-btn" id="mobile-back-btn" onclick="backToRoomsList()" title="채팅방 목록으로">←</button>
-            <div>
-              <div id="chat-room-name"></div>
+            <div style="min-width:0">
+              <div id="chat-hdr-title-row" style="display:flex;align-items:center;gap:4px;cursor:pointer" title="참여명단 펼치기/접기">
+                <div id="chat-room-name"></div>
+                <button id="member-chips-toggle-btn" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;padding:0 2px;flex-shrink:0;transition:transform .15s">▾</button>
+              </div>
               <div class="m-chips" id="member-chips"></div>
             </div>
             <button id="room-menu-btn" title="채팅방 옵션" style="margin-left:auto">⋮</button>
           </div>
-          <div id="announcement-bar" hidden style="padding:8px 18px;background:linear-gradient(90deg,var(--primary-lt),var(--surface));border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;flex-shrink:0;cursor:pointer" title="클릭하여 펼치기/접기">
+          <div id="announcement-bar" hidden style="padding:8px 18px;background:var(--primary-lt);border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;flex-shrink:0;cursor:pointer" title="클릭하여 펼치기/접기">
             <span style="font-size:14px;flex-shrink:0">📢</span>
             <div style="flex:1;min-width:0">
               <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:2px">공지</div>
@@ -1622,10 +1638,10 @@ function esc(s) {
 }
 function showToast(msg, duration = 3000, color = 'var(--primary)') {
   const t = document.createElement('div');
-  t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${color};color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;opacity:1;transition:opacity .4s;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25)`;
+  t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${color};color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25)`;
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, duration);
+  setTimeout(() => { t.remove(); }, duration);
 }
 function tagHL(text) {
   let out = esc(text)
@@ -1671,8 +1687,13 @@ function fmtBytes(b) {
 // 그래서 네이티브 앱에서는 target="_blank"를 붙이지 않고, 일반 웹(PC/모바일 브라우저)에서는
 // 기존처럼 새 탭에서 열리도록 target="_blank"를 유지한다.
 function isNativeApp() {
-  try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
-  catch (e) { return false; }
+  // Capacitor(안드로이드) 앱과 Electron(PC 설치 프로그램) 둘 다, target="_blank"로 열면
+  // 새 창이 하나 더 뜬 다음에야 다운로드/저장창이 나타나는 문제가 있어 같이 취급한다.
+  try {
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return true;
+    if (/electron/i.test(navigator.userAgent || '')) return true;
+    return false;
+  } catch (e) { return false; }
 }
 function fileIcon(name) {
   const ext = (name||'').split('.').pop().toLowerCase();
@@ -2420,6 +2441,7 @@ function selectRoom(id) {
   document.getElementById('chat-room-name').textContent = curRoom?.name || '';
   const chips = document.getElementById('member-chips');
   chips.innerHTML = Object.keys(curRoom?.members || {}).map(m => `<span class="m-chip" style="color:${ucolor(m)}">${esc(dName(m))}</span>`).join('');
+  setMemberChipsCollapsed(true); // v3.50: 방을 새로 열 때마다 참여명단은 접힌 상태로 시작
   document.getElementById('input-area').hidden = false;
   document.getElementById('msgs').innerHTML = '<div class="center-msg"><span class="spinner"></span>메시지 불러오는 중...</div>';
   listenMessages(id);
@@ -4278,6 +4300,19 @@ document.getElementById('announcement-bar').addEventListener('click', () => {
 });
 
 // ──────────────────────────────────────────────────────
+// 채팅방 참여명단 접기/펼치기 (v3.50)
+// ──────────────────────────────────────────────────────
+let memberChipsCollapsed = true;
+function setMemberChipsCollapsed(collapsed) {
+  memberChipsCollapsed = collapsed;
+  document.getElementById('member-chips').classList.toggle('collapsed', collapsed);
+  document.getElementById('member-chips-toggle-btn').classList.toggle('collapsed', collapsed);
+}
+document.getElementById('chat-hdr-title-row').addEventListener('click', () => {
+  setMemberChipsCollapsed(!memberChipsCollapsed);
+});
+
+// ──────────────────────────────────────────────────────
 // START
 // ──────────────────────────────────────────────────────
 // 전역 라이트박스 (img onclick에서 호출)
@@ -4617,7 +4652,7 @@ function renderDetailFiles(container) {
       if (f.userName === user.name || user.name === ADMIN_USER) {
         const dBtn = document.createElement('button');
         dBtn.textContent = '🗑️';
-        dBtn.style.cssText = 'position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);border:none;border-radius:4px;color:#fff;font-size:13px;padding:2px 5px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1';
+        dBtn.style.cssText = 'position:absolute;top:4px;right:4px;background:var(--text);border:none;border-radius:4px;color:#fff;font-size:13px;padding:2px 5px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1';
         dBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           if (!confirm('이 파일을 삭제하시겠습니까?')) return;
