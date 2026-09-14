@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.42 | 2026-09-14 | PC 화면에서도 넓은 모니터에 앱이 화면 전체로 늘어나지 않고, 카카오톡 데스크톱처럼 가운데 정렬된 좁은 창(최대 1000px)으로 보이도록 수정. 좌측 아이콘 레일을 도입한 원래 목적(하단 탭 없이도 좁은 레이아웃이 가능하게)을 완성 -->
+<!-- v3.43 | 2026-09-14 | 관리자패널에서 "새 사용자 추가"를 하면 "멤버 직책 관리" 목록에도 자동으로 함께 표시되도록 수정 (기존에는 새로고침 전까지 목록에 안 보였음) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -964,7 +964,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.42</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.43</p>
   </div>
 </div>
 
@@ -3873,6 +3873,7 @@ document.getElementById('admin-add-user-btn').addEventListener('click', async ()
   await saveUsersToFirebase();
   input.value = '';
   renderAdminUserList();
+  renderRoleList(); // v3.43: 새 사용자 추가 시 멤버 직책 관리 목록에도 자동으로 표시
 });
 
 // ──────────────────────────────────────────────────────
