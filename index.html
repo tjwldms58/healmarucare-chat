@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.51 | 2026-09-14 | 좌측 아이콘 레일과 헤더/채팅 영역 사이에 그림자가 끼어 분리돼 보이던 문제 수정 (헤더 그림자 제거) -->
+<!-- v3.54 | 2026-09-14 | 설치형 앱(Electron)에서 Firebase 인증이 IndexedDB 문제로 응답 없이 멈춰 채팅방/실시간연결이 전혀 안 뜨던 문제 수정 (인증을 메모리 기반으로 전환 + 타임아웃 안전장치 추가) -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -555,6 +555,19 @@
     .room-info { flex: 1; min-width: 0; }
     .room-nm { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-cnt { font-size: 11px; color: var(--text-muted); }
+    /* v3.53: 채팅방 목록 아이템 좌측 참여자 프로필 사진(최소1~최대4, 모자이크) */
+    .room-av {
+      width: 42px; height: 42px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      display: grid; gap: 1px; background: var(--border);
+    }
+    .room-av.n1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .room-av.n2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+    .room-av.n3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .room-av.n3 .rac:first-child { grid-column: 1 / 3; }
+    .room-av.n4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .rac { display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 15px; font-weight: 700; color: #fff; }
+    .rac img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .room-av.n3 .rac, .room-av.n4 .rac { font-size: 11px; }
 
     /* ============================================================ CHAT AREA */
     #chat { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
@@ -1022,7 +1035,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.51</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.54</p>
   </div>
 </div>
 
@@ -1107,12 +1120,6 @@
     <div class="modal-body">
       <!-- 계정 및 권한 관리 -->
       <p style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">계정 및 권한 관리</p>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
-        · <b style="color:var(--text)">로그인</b> — 앱 로그인 허용 여부<br>
-        · <b style="color:var(--text)">검토요청</b> — @부대표님 검토요청 패널 접근<br>
-        · <b style="color:var(--text)">팀원요청</b> — @팀원 팀원요청 패널 접근<br>
-        · <b style="color:var(--text)">경영지원</b> — @경영지원 업무요청(경영) 패널 접근
-      </div>
       <!-- 컬럼 헤더 -->
       <div style="display:grid;grid-template-columns:1fr 46px 46px 46px 46px;gap:6px;padding:0 4px 6px;border-bottom:2px solid var(--border)">
         <span style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.4px">이름</span>
@@ -1561,7 +1568,7 @@ import { getDatabase, ref as dbRef, onValue, off, push, set, update, get, remove
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
-import { getAuth, signInAnonymously, onAuthStateChanged }
+import { getAuth, initializeAuth, inMemoryPersistence, signInAnonymously, onAuthStateChanged }
        from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 // ──────────────────────────────────────────────────────
@@ -1852,7 +1859,13 @@ async function signInToFirebase() {
     }
   });
   try {
-    const cred = await signInAnonymously(auth);
+    // v3.54: signInAnonymously가 (환경 문제로) 응답 없이 멈추는 경우에 대비한 안전장치.
+    // 일정 시간 안에 끝나지 않으면 타임아웃 처리해서, 앱이 영원히 멈춰 채팅방/실시간
+    // 연결이 아예 안 뜨는 상황 대신 최소한 에러라도 남기고 다음 단계로 진행되게 함.
+    const cred = await Promise.race([
+      signInAnonymously(auth),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase 인증 응답 없음(8초 타임아웃)')), 8000))
+    ]);
     const uid  = cred.user.uid;
     await set(dbRef(db, `userSessions/${uid}`), user.name);
     _setAuthStatus(true, '');
@@ -2131,7 +2144,16 @@ function initFirebaseEarly() {
     const app = initializeApp(firebaseConfig);
     db      = getDatabase(app);
     storage = getStorage(app);
-    auth    = getAuth(app);
+    // v3.54: 기본 getAuth()는 내부적으로 IndexedDB에 로그인 상태를 저장하려고 하는데,
+    // Electron 설치 프로그램 등 일부 환경에서 이 IndexedDB 접근이 응답 없이 멈춰버리는
+    // 경우가 있음 — 에러도 안 뜨고 그냥 영원히 멈춰서 로그인 이후 채팅방/실시간연결이
+    // 전부 안 뜨는 원인이었음(브라우저에서는 정상 동작). IndexedDB를 아예 쓰지 않는
+    // 메모리 기반 인증 저장 방식으로 바꿔 이 문제를 원천 차단.
+    try {
+      auth = initializeAuth(app, { persistence: inMemoryPersistence });
+    } catch (e) {
+      auth = getAuth(app); // 이미 초기화되어 있는 등 예외적인 경우 대비
+    }
     loadUsersFromFirebase(); // 로그인 전에 USERS 로딩
 
     // 비활성화 사용자 실시간 감시
@@ -2347,6 +2369,34 @@ async function migrateUserRooms() {
   } catch(e) { /* 규칙 적용 후엔 전체 rooms 읽기 실패할 수 있음 — 무시 */ }
 }
 
+// v3.53: 채팅방 목록 좌측에 보여줄 참여자(최대 4명) 선정 — 나를 제외한 멤버 우선,
+// USERS 등록 순서를 기준으로 정렬해 렌더될 때마다 같은 순서가 나오게 한다.
+function roomAvatarMembers(room) {
+  const all = Object.keys(room?.members || {});
+  const others = all.filter(n => n !== user?.name);
+  const pool = others.length ? others : all;
+  pool.sort((a, b) => {
+    const ia = USERS.indexOf(a), ib = USERS.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b, 'ko');
+  });
+  return pool.slice(0, 4);
+}
+function roomAvatarHTML(room) {
+  const members = roomAvatarMembers(room);
+  const n = members.length || 1;
+  const cellsHTML = members.length
+    ? members.map(name => {
+        const url = photoUrls[name];
+        return url
+          ? `<div class="rac" style="background:${ucolor(name)}"><img src="${esc(url)}" alt=""></div>`
+          : `<div class="rac" style="background:${ucolor(name)}">${esc(dName(name)[0] || '?')}</div>`;
+      }).join('')
+    : `<div class="rac" style="background:var(--border)"></div>`;
+  return `<div class="room-av n${n}">${cellsHTML}</div>`;
+}
 function renderRooms() {
   const el = document.getElementById('rooms-scroll');
   const myRooms = Object.entries(allRooms)
@@ -2364,7 +2414,7 @@ function renderRooms() {
     d.className = 'room-item' + (id === curRoomId ? ' active' : '');
     d.dataset.id = id;
     const cnt = Object.keys(room.members || {}).length;
-    d.innerHTML = `<span class="room-hash">#</span><div class="room-info"><div class="room-nm">${esc(room.name)}</div><div class="room-cnt">${cnt}명</div></div>`;
+    d.innerHTML = `${roomAvatarHTML(room)}<div class="room-info"><div class="room-nm">${esc(room.name)}</div><div class="room-cnt">${cnt}명</div></div>`;
     d.onclick = () => selectRoom(id);
     el.appendChild(d);
   });
@@ -4048,6 +4098,8 @@ function applyAllAvatars() {
   renderMemberList();
   // Re-render chat messages if open
   if (cachedMsgs.length) renderMessages(cachedMsgs);
+  // v3.53: 채팅방 목록의 참여자 프로필 사진도 갱신
+  if (user) renderRooms();
 }
 
 async function uploadProfilePhoto(file) {
