@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.46 | 2026-09-14 | 공지(고정 메시지) 바를 기본적으로 한 줄로 접어서 표시. 클릭하면 펼침/접힘 토글 -->
+<!-- v3.47 | 2026-09-14 | 안드로이드 앱(네이티브)에서 채팅에 첨부된 파일(문서)이 안 열리던 문제 수정 - 네이티브 앱에서는 target="_blank" 대신 일반 링크로 열어 시스템이 처리하도록 변경 -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -996,7 +996,7 @@
       </div>
       <button type="submit" class="btn-primary" id="login-btn">로그인</button>
     </form>
-    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.46</p>
+    <p style="text-align:center;margin-top:18px;font-size:11px;color:var(--text-muted)">v3.47</p>
   </div>
 </div>
 
@@ -1651,6 +1651,15 @@ function fmtBytes(b) {
   if (b < 1024) return b + ' B';
   if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
   return (b/1024/1024).toFixed(1) + ' MB';
+}
+// v3.47: Capacitor 네이티브 앱(안드로이드 등)의 WebView는 target="_blank"(새 창 열기 요청)를
+// 기본적으로 처리하지 못해 파일 첨부 링크를 눌러도 아무 반응이 없다. 반면 target 없이 일반
+// 링크로 이동하면 Capacitor가 자동으로 외부(시스템 브라우저/다운로드)로 열어준다.
+// 그래서 네이티브 앱에서는 target="_blank"를 붙이지 않고, 일반 웹(PC/모바일 브라우저)에서는
+// 기존처럼 새 탭에서 열리도록 target="_blank"를 유지한다.
+function isNativeApp() {
+  try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+  catch (e) { return false; }
 }
 function fileIcon(name) {
   const ext = (name||'').split('.').pop().toLowerCase();
@@ -2569,7 +2578,7 @@ function renderMessages(msgs) {
     if (msg.type === 'image') {
       bubbleContent = `<div class="img-bubble"><img src="${esc(msg.fileUrl)}" alt="${esc(msg.fileName)}" onclick="openLightboxGlobal(this.src)" style="cursor:pointer"></div>`;
     } else if (msg.type === 'file') {
-      bubbleContent = `<a class="doc-bubble" href="${esc(msg.fileUrl)}" target="_blank" download="${esc(msg.fileName)}">
+      bubbleContent = `<a class="doc-bubble" href="${esc(msg.fileUrl)}" ${isNativeApp() ? '' : 'target="_blank"'} download="${esc(msg.fileName)}">
         <div class="doc-icon">${fileIcon(msg.fileName)}</div>
         <div class="doc-info">
           <div class="doc-nm">${esc(msg.fileName)}</div>
@@ -2898,7 +2907,7 @@ function renderFilesGallery(files) {
       const a = document.createElement('a');
       a.className = 'file-gal-item';
       a.href = f.fileUrl;
-      a.target = '_blank';
+      if (!isNativeApp()) a.target = '_blank';
       if (f.fileType === 'image') {
         a.onclick = (e) => { e.preventDefault(); openLightbox(f.fileUrl); };
         a.innerHTML = `
@@ -4620,7 +4629,7 @@ function renderDetailFiles(container) {
       const row = document.createElement('a');
       row.className = 'det-doc-row';
       row.href = f.fileUrl;
-      row.target = '_blank';
+      if (!isNativeApp()) row.target = '_blank';
       row.style.flex = '1';
       row.innerHTML = `
         <div style="font-size:26px;flex-shrink:0">${fileIcon(f.fileName)}</div>
